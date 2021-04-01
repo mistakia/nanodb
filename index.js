@@ -11,6 +11,8 @@ const db = require('./db')
 const logger = debug('script')
 debug.enable('script')
 
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 const POST = (data) => ({
   method: 'POST',
   body: JSON.stringify(data),
@@ -91,7 +93,7 @@ const main = async () => {
   const { count } = await getFrontierCount()
   logger(`Frontier Count: ${count}`)
 
-  const batchSize = 1000
+  const batchSize = 5000
   let index = 0
   let addressCount = 0
   let account = constants.BURN_ACCOUNT
@@ -134,22 +136,26 @@ const main = async () => {
     }
     await db('accounts').insert(accountInserts).onConflict().merge()
 
-    const frontierHashes = Object.values(accounts).map((a) => a.frontier)
-    logger(`Fetching ${frontierHashes.length} blocks`)
+    if (argv.b) {
+      const frontierHashes = Object.values(accounts).map((a) => a.frontier)
+      logger(`Fetching ${frontierHashes.length} blocks`)
 
-    const { blocks } = await getBlocksInfo({ hashes: frontierHashes })
-    const blockCount = Object.keys(blocks).length
-    logger(`${blockCount} blocks returned`)
+      const { blocks } = await getBlocksInfo({ hashes: frontierHashes })
+      const blockCount = Object.keys(blocks).length
+      logger(`${blockCount} blocks returned`)
 
-    const blockInserts = []
-    for (const hash in blocks) {
-      const block = blocks[hash]
-      blockInserts.push({ hash, ...formatBlockInfo(block) })
+      const blockInserts = []
+      for (const hash in blocks) {
+        const block = blocks[hash]
+        blockInserts.push({ hash, ...formatBlockInfo(block) })
+      }
+      await db('blocks').insert(blockInserts).onConflict().merge()
     }
-    await db('blocks').insert(blockInserts).onConflict().merge()
 
     index += batchSize
     account = addresses[addressCount - 1]
+
+    await wait(3000)
   } while (addressCount === batchSize)
 
   process.exit()
