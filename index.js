@@ -54,17 +54,50 @@ const getFrontiers = ({ account, count = 1 }) => {
   return request(options)
 }
 
+const getBlocksInfo = ({ hashes }) => {
+  const data = {
+    action: 'blocks_info',
+    json_block: true,
+    hashes
+  }
+  const options = rpcRequest(data)
+  return request(options)
+}
+
+const formatBlockInfo = ({
+  block_account,
+  amount,
+  balance,
+  height,
+  local_timestamp,
+  confirmed,
+  contents,
+  subtype
+}) => ({
+  block_account,
+  amount,
+  balance,
+  height,
+  local_timestamp,
+  confirmed: confirmed === 'true',
+  ...contents,
+  type: constants.blockType[contents.type],
+  subtype: constants.blockSubType[subtype]
+})
+
 const main = async () => {
   const { count } = await getFrontierCount()
   logger(`Frontier Count: ${count}`)
 
-  const batchSize = 20000
+  const batchSize = 1000
   let index = 0
   let accountCount = 0
   let account = constants.BURN_ACCOUNT
 
   do {
-    logger(`Fetching accounts from ${index} to ${index + batchSize} (${account})`)
+    logger(
+      `Fetching accounts from ${index} to ${index + batchSize} (${account})`
+    )
 
     const { frontiers } = await getFrontiers({
       account,
@@ -75,17 +108,30 @@ const main = async () => {
     accountCount = accounts.length
     logger(`${accountCount} accounts returned`)
 
-    const inserts = []
+    const accountInserts = []
     for (const account in frontiers) {
       const key = nanocurrency.derivePublicKey(account)
-      inserts.push({
+      accountInserts.push({
         frontier: frontiers[account],
         account,
         key
       })
     }
+    await db('accounts').insert(accountInserts).onConflict().ignore()
 
-    await db('accounts').insert(inserts).onConflict().ignore()
+    const frontierHashes = Object.values(frontiers)
+    logger(`Fetching ${frontierHashes.length} blocks`)
+
+    const { blocks } = await getBlocksInfo({ hashes: frontierHashes })
+    const blockCount = Object.keys(blocks).length
+    logger(`${blockCount} blocks returned`)
+
+    const blockInserts = []
+    for (const hash in blocks) {
+      const block = blocks[hash]
+      blockInserts.push({ hash, ...formatBlockInfo(block) })
+    }
+    await db('blocks').insert(blockInserts).onConflict().merge()
 
     index += batchSize
     account = accounts[accountCount - 1]
