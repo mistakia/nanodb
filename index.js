@@ -44,10 +44,12 @@ const getFrontierCount = () => {
   return request(options)
 }
 
-const getFrontiers = ({ account, count = 1 }) => {
+const getLedger = ({ account, count = 1, threshold = 100000000000000000 }) => {
   const data = {
-    action: 'frontiers',
+    action: 'ledger',
+    pending: true,
     account,
+    threshold,
     count
   }
   const options = rpcRequest(data)
@@ -91,7 +93,7 @@ const main = async () => {
 
   const batchSize = 1000
   let index = 0
-  let accountCount = 0
+  let addressCount = 0
   let account = constants.BURN_ACCOUNT
 
   do {
@@ -99,27 +101,40 @@ const main = async () => {
       `Fetching accounts from ${index} to ${index + batchSize} (${account})`
     )
 
-    const { frontiers } = await getFrontiers({
+    const { accounts } = await getLedger({
       account,
       count: batchSize
     })
 
-    const accounts = Object.keys(frontiers)
-    accountCount = accounts.length
-    logger(`${accountCount} accounts returned`)
+    const addresses = Object.keys(accounts)
+    addressCount = addresses.length
+    logger(`${addressCount} accounts returned`)
 
     const accountInserts = []
-    for (const account in frontiers) {
-      const key = nanocurrency.derivePublicKey(account)
+    for (const address in accounts) {
+      const {
+        frontier,
+        open_block,
+        representative_block,
+        balance,
+        modified_timestamp,
+        block_count
+      } = accounts[address]
+      const key = nanocurrency.derivePublicKey(address)
       accountInserts.push({
-        frontier: frontiers[account],
-        account,
+        frontier,
+        open_block,
+        representative_block,
+        balance,
+        modified_timestamp,
+        block_count,
+        account: address,
         key
       })
     }
-    await db('accounts').insert(accountInserts).onConflict().ignore()
+    await db('accounts').insert(accountInserts).onConflict().merge()
 
-    const frontierHashes = Object.values(frontiers)
+    const frontierHashes = Object.values(accounts).map((a) => a.frontier)
     logger(`Fetching ${frontierHashes.length} blocks`)
 
     const { blocks } = await getBlocksInfo({ hashes: frontierHashes })
@@ -134,8 +149,8 @@ const main = async () => {
     await db('blocks').insert(blockInserts).onConflict().merge()
 
     index += batchSize
-    account = accounts[accountCount - 1]
-  } while (accountCount === batchSize)
+    account = addresses[addressCount - 1]
+  } while (addressCount === batchSize)
 
   process.exit()
 }
