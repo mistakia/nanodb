@@ -29,7 +29,6 @@ CREATE TABLE `accounts` (
 DROP TABLE IF EXISTS `blocks`;
 
 CREATE TABLE `blocks` (
-  `block_account` varchar(65) NOT NULL,
   `hash` varchar(64) NOT NULL,
   `amount` varchar(39) NOT NULL,
   `balance` varchar(39) NOT NULL,

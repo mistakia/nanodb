@@ -1,13 +1,14 @@
 const yargs = require('yargs/yargs')
 const debug = require('debug')
+const fs = require('fs')
 const { hideBin } = require('yargs/helpers')
 const argv = yargs(hideBin(process.argv)).argv
 const { default: fetch, Request } = require('node-fetch')
 const nanocurrency = require('nanocurrency')
 
-const constants = require('./constants')
-const config = require('./config')
-const db = require('./db')
+const constants = require('../constants')
+const config = JSON.parse(fs.readFileSync('../config.json'))
+const db = require('../db')
 const logger = debug('script')
 debug.enable('script')
 

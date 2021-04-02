@@ -1,0 +1,5 @@
+kaitaistruct==0.8
+lmdb==0.99
+nanolib==0.3
+mysql-connector-python===8.0.23
+black===20.8b1
