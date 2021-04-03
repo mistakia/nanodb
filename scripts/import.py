@@ -20,7 +20,20 @@ add_block = (
     "(hash, amount, balance, height, local_timestamp, confirmed,"
     "type, account, previous, representative, link, link_as_account, signature,"
     "work, subtype) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
-    "%s, %s, %s) ON DUPLICATE KEY UPDATE amount=amount, balance=balance, height=height, account=account, previous=previous, representative=representative, link=link, link_as_account=link_as_account, signature=signature, work=work, subtype=subtype"
+    "%s, %s, %s) ON DUPLICATE KEY UPDATE amount=amount, balance=balance, height=height,"
+    "account=account, previous=previous, representative=representative, link=link,"
+    "link_as_account=link_as_account, signature=signature, work=work, subtype=subtype"
+)
+
+add_account = (
+    "INSERT INTO accounts "
+    "(account, frontier, open_block, representative_block, balance, modified_timestamp,"
+    "block_count, confirmation_height, confirmation_height_frontier) VALUES (%s, %s, %s, %s,"
+    "%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE frontier=frontier, open_block=open_block,"
+    "representative_block=representative_block, balance=balance,"
+    "modified_timestamp=modeified_timestamp, block_count=block_count,"
+    "confirmation_height=confirmation_height,"
+    "confirmation_height_frontier=confirmation_height_frontier"
 )
 
 # Parse arguments
@@ -67,8 +80,76 @@ try:
     )
     mysql_cursor = cnx.cursor()
 
+    # Accounts table
+    if args.table == "all" or args.table == "accounts":
+        print("Importing Accounts")
+        accounts_db = env.open_db("accounts".encode())
+
+        count = 0
+        with env.begin() as txn:
+            cursor = txn.cursor(accounts_db)
+            if args.key:
+                cursor.set_key(bytearray.fromhex(args.key))
+
+            for key, value in cursor:
+
+                keystream = KaitaiStream(io.BytesIO(key))
+                valstream = KaitaiStream(io.BytesIO(value))
+
+                account_key = Nanodb.AccountsKey(keystream)
+                account_info = Nanodb.AccountsValue(valstream)
+
+                balance = nanolib.blocks.parse_hex_balance(
+                    account_info.balance.hex().upper()
+                )
+
+                print(
+                    "count: {}, account {}".format(
+                        count, account_key.account.hex().upper()
+                    ),
+                    end="\r",
+                )
+
+                data_account = (
+                    # account
+                    nanolib.accounts.get_account_id(
+                        prefix=nanolib.AccountIDPrefix.NANO,
+                        public_key=account_key.account.hex(),
+                    ),
+                    # frontier
+                    account_info.head.hex().upper(),
+                    # open_block
+                    account_info.open_block.hex().upper(),
+                    # representative_block
+                    "",
+                    # balance
+                    balance,
+                    # #modified_timestamp
+                    datetime.datetime.utcfromtimestamp(account_info.modified).strftime(
+                        "%s"
+                    ),
+                    # #block_count
+                    account_info.block_count,
+                    # #confirmation_height
+                    "",
+                    # #confirmation_height_frontier
+                    "",
+                )
+
+                # mysql_cursor.execute(add_account, data_account)
+                # cnx.commit()
+
+                count += 1
+                if count >= args.count:
+                    break
+
+            cursor.close()
+        if count == 0:
+            print("(empty)\n")
+
     # State blocks table
     if args.table == "all" or args.table == "state_blocks":
+        print("Importing State Blocks")
         state_db = env.open_db("state_blocks".encode())
 
         with env.begin() as txn:
