@@ -84,6 +84,7 @@ try:
     if args.table == "all" or args.table == "accounts":
         print("Importing Accounts")
         accounts_db = env.open_db("accounts".encode())
+        confirmation_db = env.open_db("confirmation_height".encode())
 
         count = 0
         with env.begin() as txn:
@@ -110,6 +111,12 @@ try:
                     end="\r",
                 )
 
+                confirmation_value = txn.get(account_key.account, default=None, db=confirmation_db)
+                confirmation_valstream = KaitaiStream(io.BytesIO(confirmation_value))
+                height_info = Nanodb.ConfirmationHeightValue(
+                    confirmation_valstream, None, Nanodb(None)
+                )
+
                 data_account = (
                     # account
                     nanolib.accounts.get_account_id(
@@ -131,9 +138,9 @@ try:
                     # #block_count
                     account_info.block_count,
                     # #confirmation_height
-                    "",
+                    height_info.height,
                     # #confirmation_height_frontier
-                    "",
+                    height_info.frontier.hex().upper(),
                 )
 
                 # mysql_cursor.execute(add_account, data_account)

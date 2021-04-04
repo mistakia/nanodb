@@ -534,7 +534,7 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.height = self._io.read_u8be()
+            self.height = self._io.read_u8le()
             self.frontier = self._io.read_bytes(32)
 
     class SendSideband(KaitaiStruct):
