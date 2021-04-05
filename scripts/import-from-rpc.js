@@ -1,95 +1,21 @@
 const yargs = require('yargs/yargs')
 const debug = require('debug')
-const path = require('path')
-const fs = require('fs')
+
 const { hideBin } = require('yargs/helpers')
 const argv = yargs(hideBin(process.argv)).argv
-const { default: fetch, Request } = require('node-fetch')
 const nanocurrency = require('nanocurrency')
 
 const constants = require('../constants')
-const config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json')))
 const db = require('../db')
 const logger = debug('script')
 debug.enable('script')
-
-const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
-
-const POST = (data) => ({
-  method: 'POST',
-  body: JSON.stringify(data),
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-const request = async (options) => {
-  const request = new Request(options.url, options)
-  const response = await fetch(request)
-  if (response.status >= 200 && response.status < 300) {
-    return response.json()
-  } else {
-    const res = await response.json()
-    const error = new Error(res.error || response.statusText)
-    error.response = response
-    throw error
-  }
-}
-
-const rpcRequest = (data) => {
-  return { url: config.nodeAddress, ...POST(data) }
-}
-
-const getFrontierCount = () => {
-  const data = {
-    action: 'frontier_count'
-  }
-  const options = rpcRequest(data)
-  return request(options)
-}
-
-const getLedger = ({ account, count = 1, threshold = 100000000000000000 }) => {
-  const data = {
-    action: 'ledger',
-    pending: true,
-    account,
-    threshold,
-    count
-  }
-  const options = rpcRequest(data)
-  return request(options)
-}
-
-const getBlocksInfo = ({ hashes }) => {
-  const data = {
-    action: 'blocks_info',
-    json_block: true,
-    hashes
-  }
-  const options = rpcRequest(data)
-  return request(options)
-}
-
-const formatBlockInfo = ({
-  block_account,
-  amount,
-  balance,
-  height,
-  local_timestamp,
-  confirmed,
-  contents,
-  subtype
-}) => ({
-  block_account,
-  amount,
-  balance,
-  height,
-  local_timestamp,
-  confirmed: confirmed === 'true',
-  ...contents,
-  type: constants.blockType[contents.type],
-  subtype: constants.blockSubType[subtype]
-})
+const {
+  getFrontierCount,
+  getLedger,
+  getBlocksInfo,
+  formatBlockInfo,
+  wait
+} = require('../common')
 
 const main = async () => {
   const { count } = await getFrontierCount()

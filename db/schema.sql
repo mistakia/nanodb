@@ -18,7 +18,7 @@ CREATE TABLE `accounts` (
   `confirmation_height_frontier` char(64) DEFAULT NULL,
   `key` char(64) DEFAULT NULL,
   UNIQUE KEY `account` (`account`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
 
 -- --------------------------------------------------------
 
@@ -43,9 +43,9 @@ CREATE TABLE `blocks` (
   `link_as_account` char(65) NOT NULL,
   `signature` char(128) NOT NULL,
   `work` char(16) NOT NULL,
-  `subtype` tinyint(1) NOT NULL,
+  `subtype` tinyint(1) DEFAULT NULL,
   UNIQUE KEY `block` (`hash`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
 
 -- --------------------------------------------------------
 

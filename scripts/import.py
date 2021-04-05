@@ -111,7 +111,9 @@ try:
                     end="\r",
                 )
 
-                confirmation_value = txn.get(account_key.account, default=None, db=confirmation_db)
+                confirmation_value = txn.get(
+                    account_key.account, default=None, db=confirmation_db
+                )
                 confirmation_valstream = KaitaiStream(io.BytesIO(confirmation_value))
                 height_info = Nanodb.ConfirmationHeightValue(
                     confirmation_valstream, None, Nanodb(None)

@@ -16,6 +16,7 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 - [ ] IPFS Node pinning Nano State Blocks / IPLD blocks
 
 #### Roadmap
+
 - Basic account classifiers
 - Block classifiers (i.e. spam)
 
@@ -41,6 +42,7 @@ zdpuAzr1QDRxAhHZAXNA84UvHbtbvCTPEU4e3LoLva8fHFxF8 // base58btc encoded CID of ma
 ```
 
 ### Entry
+
 An entry is considered valid if the state block it contains is valid and the heights match.
 
 ```js
