@@ -14,6 +14,10 @@ const verifyBlock = async (hash) => {
     await db('blocks').insert(block).onConflict().merge()
   }
 
+  if (!block.previous) {
+    return
+  }
+
   if (block.previous === constants.OPEN_BLOCK_PREVIOUS) {
     return
   }
