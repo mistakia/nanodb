@@ -1,14 +1,27 @@
+const yargs = require('yargs/yargs')
+const { hideBin } = require('yargs/helpers')
+
+const argv = yargs(hideBin(process.argv)).argv
 const { getBlock, formatBlockInfo } = require('../common')
 const constants = require('../constants')
 const db = require('../db')
 let index = 0
 let account
+const missing = []
+
+const blockLimit = argv.blockLimit || Infinity
+
+console.log(`Running with a block limit of: ${blockLimit}`)
 
 const verifyBlock = async (hash) => {
   const rows = await db('blocks').select().where({ hash })
   let block = rows[0]
 
   if (!block) {
+    if (argv.noSync) {
+      missing.push(hash)
+      return
+    }
     const b = await getBlock(hash)
     block = { hash, ...formatBlockInfo(b) }
     await db('blocks').insert(block).onConflict().merge()
@@ -38,6 +51,11 @@ const main = async () => {
   while (account) {
     process.stdout.write(`\rVerifying / ${index} / ${account.account}`)
     if (account.frontier) {
+      if (account.block_count > blockLimit) {
+        console.log(`\nSkipping ${account.account} block count, ${account.block_count}, exceeds limit`)
+        continue
+      }
+
       try {
         await verifyBlock(account.frontier)
       } catch (e) {
@@ -49,6 +67,7 @@ const main = async () => {
     index += 1
     account = await getAccountRow(index)
   }
+  if (missing.length) console.log('Missing blocks', missing)
   console.log('\nComplete')
 
   process.exit()
