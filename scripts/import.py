@@ -182,7 +182,7 @@ try:
                     end="\r",
                 )
 
-                if state_block.sideband.height == 0 and state_block.sideband.is_receive:
+                if state_block.sideband.height == 1 and state_block.sideband.is_receive:
                     subtype = 1
                 elif state_block.sideband.is_receive:
                     subtype = 2
