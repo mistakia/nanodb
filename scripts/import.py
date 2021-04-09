@@ -246,6 +246,320 @@ try:
         if count == 0:
             print("(empty)\n")
 
+    # Send blocks table
+    if args.table == "all" or args.table == "send":
+        print("Importing Send Blocks")
+        send_db = env.open_db("send".encode())
+
+        with env.begin() as txn:
+            cursor = txn.cursor(send_db)
+            if args.key:
+                cursor.set_key(bytearray.fromhex(args.key))
+
+            count = 0
+            for key, value in cursor:
+                keystream = KaitaiStream(io.BytesIO(key))
+                valstream = KaitaiStream(io.BytesIO(value))
+                try:
+                    send_key = Nanodb.SendKey(keystream)
+                    send_block = Nanodb.SendValue(valstream, None, Nanodb(None))
+                except Exception as ex:
+                    print(ex)
+                    continue
+
+                print(
+                    "count: {}, hash {}".format(count, send_key.hash.hex().upper()),
+                    end="\r",
+                )
+
+                data_block = (
+                    # hash
+                    send_key.hash.hex().upper(),
+                    # amount
+                    "",
+                    # balance
+                    nanolib.blocks.parse_hex_balance(
+                        send_block.block.balance.hex().upper()
+                    ),
+                    # height
+                    send_block.sideband.height,
+                    # local_timestamp
+                    datetime.datetime.utcfromtimestamp(
+                        send_block.sideband.timestamp
+                    ).strftime("%s"),
+                    # confirmed
+                    "1",
+                    # type
+                    "4",
+                    # account
+                    nanolib.accounts.get_account_id(
+                        prefix=nanolib.AccountIDPrefix.NANO,
+                        public_key=send_block.sideband.account.hex(),
+                    ),
+                    # previous
+                    send_block.block.previous.hex().upper(),
+                    # representative
+                    None,
+                    # link
+                    None,
+                    # link_as_account,
+                    None,
+                    # signature
+                    send_block.block.signature.hex().upper(),
+                    # work
+                    hex(send_block.block.work)[2:],
+                    # subtype
+                    None,
+                )
+
+                mysql_cursor.execute(add_block, data_block)
+                cnx.commit()
+
+                count += 1
+                if count >= args.count:
+                    break
+            mysql_cursor.close()
+            cursor.close()
+        if count == 0:
+            print("(empty)\n")
+
+    # Receive blocks table
+    if args.table == "all" or args.table == "receive":
+        print("Importing Receive Blocks")
+        receive_db = env.open_db("receive".encode())
+
+        with env.begin() as txn:
+            cursor = txn.cursor(receive_db)
+            if args.key:
+                cursor.set_key(bytearray.fromhex(args.key))
+
+            count = 0
+            for key, value in cursor:
+                keystream = KaitaiStream(io.BytesIO(key))
+                valstream = KaitaiStream(io.BytesIO(value))
+                try:
+                    receive_key = Nanodb.ReceiveKey(keystream)
+                    receive_block = Nanodb.ReceiveValue(valstream, None, Nanodb(None))
+                except Exception as ex:
+                    print(ex)
+                    continue
+
+                print(
+                    "count: {}, hash {}".format(count, receive_key.hash.hex().upper()),
+                    end="\r",
+                )
+
+                data_block = (
+                    # hash
+                    receive_key.hash.hex().upper(),
+                    # amount
+                    "",
+                    # balance
+                    nanolib.blocks.parse_hex_balance(
+                        receive_block.sideband.balance.hex().upper()
+                    ),
+                    # height
+                    receive_block.sideband.height,
+                    # local_timestamp
+                    datetime.datetime.utcfromtimestamp(
+                        receive_block.sideband.timestamp
+                    ).strftime("%s"),
+                    # confirmed
+                    "1",
+                    # type
+                    "3",
+                    # account
+                    nanolib.accounts.get_account_id(
+                        prefix=nanolib.AccountIDPrefix.NANO,
+                        public_key=receive_block.sideband.account.hex(),
+                    ),
+                    # previous
+                    receive_block.block.previous.hex().upper(),
+                    # representative
+                    None,
+                    # link
+                    None,
+                    # link_as_account,
+                    None,
+                    # signature
+                    receive_block.block.signature.hex().upper(),
+                    # work
+                    hex(receive_block.block.work)[2:],
+                    # subtype
+                    None,
+                )
+
+                mysql_cursor.execute(add_block, data_block)
+                cnx.commit()
+
+                count += 1
+                if count >= args.count:
+                    break
+            mysql_cursor.close()
+            cursor.close()
+        if count == 0:
+            print("(empty)\n")
+
+    # Open blocks table
+    if args.table == "all" or args.table == "open":
+        print("Importing Open Blocks")
+        open_db = env.open_db("open".encode())
+
+        with env.begin() as txn:
+            cursor = txn.cursor(open_db)
+            if args.key:
+                cursor.set_key(bytearray.fromhex(args.key))
+
+            count = 0
+            for key, value in cursor:
+                keystream = KaitaiStream(io.BytesIO(key))
+                valstream = KaitaiStream(io.BytesIO(value))
+                try:
+                    open_key = Nanodb.OpenKey(keystream)
+                    open_block = Nanodb.OpenValue(valstream, None, Nanodb(None))
+                except Exception as ex:
+                    print(ex)
+                    continue
+
+                print(
+                    "count: {}, hash {}".format(count, open_key.hash.hex().upper()),
+                    end="\r",
+                )
+
+                data_block = (
+                    # hash
+                    open_key.hash.hex().upper(),
+                    # amount
+                    "",
+                    # balance
+                    nanolib.blocks.parse_hex_balance(
+                        open_block.sideband.balance.hex().upper()
+                    ),
+                    # height
+                    "1",
+                    # local_timestamp
+                    datetime.datetime.utcfromtimestamp(
+                        open_block.sideband.timestamp
+                    ).strftime("%s"),
+                    # confirmed
+                    "1",
+                    # type
+                    "2",
+                    # account
+                    nanolib.accounts.get_account_id(
+                        prefix=nanolib.AccountIDPrefix.NANO,
+                        public_key=open_block.block.account.hex(),
+                    ),
+                    # previous
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                    # representative
+                    nanolib.accounts.get_account_id(
+                        prefix=nanolib.AccountIDPrefix.NANO,
+                        public_key=open_block.block.representative.hex(),
+                    ),
+                    # link
+                    None,
+                    # link_as_account,
+                    None,
+                    # signature
+                    open_block.block.signature.hex().upper(),
+                    # work
+                    hex(open_block.block.work)[2:],
+                    # subtype
+                    None,
+                )
+
+                mysql_cursor.execute(add_block, data_block)
+                cnx.commit()
+
+                count += 1
+                if count >= args.count:
+                    break
+            mysql_cursor.close()
+            cursor.close()
+        if count == 0:
+            print("(empty)\n")
+
+    # Change blocks table
+    if args.table == "all" or args.table == "change":
+        print("Importing Change Blocks")
+        change_db = env.open_db("change".encode())
+
+        with env.begin() as txn:
+            cursor = txn.cursor(change_db)
+            if args.key:
+                cursor.set_key(bytearray.fromhex(args.key))
+
+            count = 0
+            for key, value in cursor:
+                keystream = KaitaiStream(io.BytesIO(key))
+                valstream = KaitaiStream(io.BytesIO(value))
+                try:
+                    change_key = Nanodb.ChangeKey(keystream)
+                    change_block = Nanodb.ChangeValue(valstream, None, Nanodb(None))
+                except Exception as ex:
+                    print(ex)
+                    continue
+
+                print(
+                    "count: {}, hash {}".format(count, change_key.hash.hex().upper()),
+                    end="\r",
+                )
+
+                data_block = (
+                    # hash
+                    change_key.hash.hex().upper(),
+                    # amount
+                    "",
+                    # balance
+                    nanolib.blocks.parse_hex_balance(
+                        change_block.sideband.balance.hex().upper()
+                    ),
+                    # height
+                    "1",
+                    # local_timestamp
+                    datetime.datetime.utcfromtimestamp(
+                        change_block.sideband.timestamp
+                    ).strftime("%s"),
+                    # confirmed
+                    "1",
+                    # type
+                    "5",
+                    # account
+                    nanolib.accounts.get_account_id(
+                        prefix=nanolib.AccountIDPrefix.NANO,
+                        public_key=change_block.sideband.account.hex(),
+                    ),
+                    # previous
+                    change_block.block.previous.hex().upper(),
+                    # representative
+                    nanolib.accounts.get_account_id(
+                        prefix=nanolib.AccountIDPrefix.NANO,
+                        public_key=change_block.block.representative.hex(),
+                    ),
+                    # link
+                    None,
+                    # link_as_account,
+                    None,
+                    # signature
+                    change_block.block.signature.hex().upper(),
+                    # work
+                    hex(change_block.block.work)[2:],
+                    # subtype
+                    None,
+                )
+
+                mysql_cursor.execute(add_block, data_block)
+                cnx.commit()
+
+                count += 1
+                if count >= args.count:
+                    break
+            mysql_cursor.close()
+            cursor.close()
+        if count == 0:
+            print("(empty)\n")
+
     env.close()
     cnx.close()
 except Exception as ex:
