@@ -130,7 +130,7 @@ try:
                     # open_block
                     account_info.open_block.hex().upper(),
                     # representative_block
-                    "",
+                    None,
                     # balance
                     balance,
                     # #modified_timestamp
@@ -193,7 +193,7 @@ try:
                     # hash
                     state_key.hash.hex().upper(),
                     # amount
-                    "",
+                    None,
                     # balance
                     nanolib.blocks.parse_hex_balance(
                         state_block.block.balance.hex().upper()
@@ -276,7 +276,7 @@ try:
                     # hash
                     send_key.hash.hex().upper(),
                     # amount
-                    "",
+                    None,
                     # balance
                     nanolib.blocks.parse_hex_balance(
                         send_block.block.balance.hex().upper()
@@ -353,7 +353,7 @@ try:
                     # hash
                     receive_key.hash.hex().upper(),
                     # amount
-                    "",
+                    None,
                     # balance
                     nanolib.blocks.parse_hex_balance(
                         receive_block.sideband.balance.hex().upper()
@@ -430,7 +430,7 @@ try:
                     # hash
                     open_key.hash.hex().upper(),
                     # amount
-                    "",
+                    None,
                     # balance
                     nanolib.blocks.parse_hex_balance(
                         open_block.sideband.balance.hex().upper()
@@ -510,7 +510,7 @@ try:
                     # hash
                     change_key.hash.hex().upper(),
                     # amount
-                    "",
+                    None,
                     # balance
                     nanolib.blocks.parse_hex_balance(
                         change_block.sideband.balance.hex().upper()
