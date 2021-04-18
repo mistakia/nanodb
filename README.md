@@ -3,6 +3,7 @@
 This project aims to provide up-to-date data pertaining to the [Nano cryptocurrency network](https://github.com/nanocurrency/nano-node) in various popular database formats (mysql, postgres, neo4j, etc) in order to make it more accessible. The secondary purpose is to explore structuring Nano block data on [IPFS](https://github.com/ipfs/go-ipfs) and to support an [IPLD](https://github.com/ipld/specs) implementation for Nano for use in distributed applications.
 
 - [ ] Public API
+- [ ] Google Big Query Public Dataset ([Link](https://console.cloud.google.com/bigquery?project=nano-node-310304&page=project))
 - [ ] Import scripts (from lmdb)
   - [ ] Mysql
   - [ ] Postgres
