@@ -254,6 +254,7 @@ try:
                 if (
                     btype == Nanodb.EnumBlocktype.send
                     or btype == Nanodb.EnumBlocktype.receive
+                    or btype == Nanodb.EnumBlocktype.change
                 ):
                     account = block.block_value.sideband.account
                 else:
