@@ -91,7 +91,7 @@ try:
         count = 0
         index = 0
         append = False
-        batch_size = 1000
+        batch_size = 100000
         data_accounts = []
 
         with env.begin() as txn:
@@ -192,7 +192,7 @@ try:
             count = 0
             index = 0
             append = False
-            batch_size = 1000
+            batch_size = 100000
             data_blocks = []
 
             for key, value in cursor:

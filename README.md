@@ -5,11 +5,13 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 - [ ] Public API
 - [ ] Google Big Query Public Dataset ([Link](https://console.cloud.google.com/bigquery?project=nano-node-310304&page=project))
 - [ ] Import scripts (from lmdb)
-  - [ ] Mysql
+  - [x] Mysql
+  - [x] Parquet
   - [ ] Postgres
   - [ ] Neo4j
 - [ ] Hosted snapshots
   - [ ] Mysql
+  - [ ] Parquet
   - [ ] Postgres
   - [ ] Neo4j
 - [ ] Nano IPLD Implementation
@@ -18,21 +20,30 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 
 #### Roadmap
 
-- Basic account classifiers
-- Block classifiers (i.e. spam)
+- Transaction Classification
+- Account Labeling / Classification
+- Pruned Snapshots
 
 ## Usage
 
-#### Read
+#### Read from lmdb to console
 
 ```py
-python3 scripts/read.py --filename [path] [--table [all | table_name] ] [--count [10] ]
+python3 scripts/read.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
 ```
 
-#### Import
+#### Import from lmdb to mysql
 
 ```py
-python3 scripts/import.py --filename [path] [--table [all | table_name] ] [--count [10] ]
+python3 scripts/import-mysql.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
+```
+
+_Edit `config.json` with mysql information_
+
+#### Import from lmdb to parquet
+
+```py
+python3 scripts/import-parquet.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
 ```
 
 ## Nano IPFS-Log
