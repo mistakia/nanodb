@@ -8,7 +8,6 @@ import lmdb
 import nanolib
 import json
 import math
-import pyarrow.parquet as pq
 import fastparquet
 import pandas as pd
 
@@ -169,7 +168,11 @@ try:
                 cursor.set_key(bytearray.fromhex(args.key))
 
             count = 0
+            index = 0
             append = False
+            batch_size = 1000
+            data_blocks = []
+
             for key, value in cursor:
                 keystream = KaitaiStream(io.BytesIO(key))
                 valstream = KaitaiStream(io.BytesIO(value))
@@ -217,7 +220,7 @@ try:
                         block.block_value.sideband.balance.hex().upper()
                     )
 
-                # data_block["balance"] = balance
+                data_block["balance"] = str(balance)
                 data_block["confirmed"] = "1"
                 if (
                     btype == Nanodb.EnumBlocktype.send
@@ -294,45 +297,48 @@ try:
                     print(ex)
                     height = 0
 
-                # if data_block["height"] > 1:
-                #     previous = txn.get(
-                #         block.block_value.block.previous, default=None, db=blocks_db
-                #     )
-                #     previous_valstream = KaitaiStream(io.BytesIO(previous))
-                #     previous_block = Nanodb.BlocksValue(
-                #         previous_valstream, None, Nanodb(None)
-                #     )
-                #     ptype = previous_block.block_type
-                #     if (
-                #         ptype == Nanodb.EnumBlocktype.state
-                #         or ptype == Nanodb.EnumBlocktype.send
-                #     ):
-                #         previous_balance = nanolib.blocks.parse_hex_balance(
-                #             previous_block.block_value.block.balance.hex().upper()
-                #         )
-                #     else:
-                #         previous_balance = nanolib.blocks.parse_hex_balance(
-                #             previous_block.block_value.sideband.balance.hex().upper()
-                #         )
-
-                #     data_block["amount"] = str(
-                #         abs(int(previous_balance) - int(balance))
-                #     )
-                # else:
-                #     data_block["amount"] = balance
+                if data_block["height"] > 1:
+                    previous = txn.get(
+                        block.block_value.block.previous, default=None, db=blocks_db
+                    )
+                    previous_valstream = KaitaiStream(io.BytesIO(previous))
+                    previous_block = Nanodb.BlocksValue(
+                        previous_valstream, None, Nanodb(None)
+                    )
+                    ptype = previous_block.block_type
+                    if (
+                        ptype == Nanodb.EnumBlocktype.state
+                        or ptype == Nanodb.EnumBlocktype.send
+                    ):
+                        previous_balance = nanolib.blocks.parse_hex_balance(
+                            previous_block.block_value.block.balance.hex().upper()
+                        )
+                    else:
+                        previous_balance = nanolib.blocks.parse_hex_balance(
+                            previous_block.block_value.sideband.balance.hex().upper()
+                        )
+                    data_block["amount"] = str(abs(previous_balance - balance))
+                else:
+                    data_block["amount"] = str(balance)
 
                 data_block["confirmed"] = "1" if height >= data_block["height"] else "0"
 
-                df = pd.DataFrame([data_block])
-                # TODO - Fix "Python int too large to convert to C long"
-                # df["balance"] = df["balance"].astype("int64")
-                # df["amount"] = df["amount"].astype("int64")
-                fastparquet.write('blocks.parquet', df,
-                                  write_index=count, compression='GZIP', append=append)
+                data_blocks.append(data_block)
 
-                append = True
+                if len(data_blocks) == batch_size:
+                    df = pd.DataFrame(data_blocks)
+                    index = count
+                    fastparquet.write('blocks.parquet', df,
+                                      write_index=index, compression='GZIP', append=append)
+                    data_blocks = []
+                    append = True
+
                 count += 1
+
                 if count >= args.count:
+                    df = pd.DataFrame(data_blocks)
+                    fastparquet.write('blocks.parquet', df,
+                                      write_index=index, compression='GZIP', append=append)
                     break
             cursor.close()
         if count == 0:
