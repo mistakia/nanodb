@@ -14,6 +14,7 @@ import pandas as pd
 from nanodb import Nanodb
 from kaitaistruct import KaitaiStream
 
+
 def get_state_block(block):
     if block.sideband.height == 1 and block.sideband.is_receive:
         subtype = 1  # open
@@ -88,6 +89,11 @@ try:
         confirmation_db = env.open_db("confirmation_height".encode())
 
         count = 0
+        index = 0
+        append = False
+        batch_size = 1000
+        data_accounts = []
+
         with env.begin() as txn:
             cursor = txn.cursor(accounts_db)
             if args.key:
@@ -100,10 +106,6 @@ try:
 
                 account_key = Nanodb.AccountsKey(keystream)
                 account_info = Nanodb.AccountsValue(valstream)
-
-                balance = nanolib.blocks.parse_hex_balance(
-                    account_info.balance.hex().upper()
-                )
 
                 print(
                     "count: {}, account {}".format(
@@ -120,36 +122,56 @@ try:
                     confirmation_valstream, None, Nanodb(None)
                 )
 
-                data_account = (
-                    # account
-                    nanolib.accounts.get_account_id(
-                        prefix=nanolib.AccountIDPrefix.NANO,
-                        public_key=account_key.account.hex(),
-                    ),
-                    # frontier
-                    account_info.head.hex().upper(),
-                    # open_block
-                    account_info.open_block.hex().upper(),
-                    # representative_block
-                    None,
-                    # balance
-                    balance,
-                    # #modified_timestamp
-                    datetime.datetime.utcfromtimestamp(account_info.modified).strftime(
-                        "%s"
-                    ),
-                    # #block_count
-                    account_info.block_count,
-                    # #confirmation_height
-                    height_info.height,
-                    # #confirmation_height_frontier
-                    height_info.frontier.hex().upper(),
+                data_account = {}
+                balance = nanolib.blocks.parse_hex_balance(
+                    account_info.balance.hex().upper()
                 )
 
-                # TODO - parquet write
+                data_account["balance"] = str(balance)
+                data_account["account"] = nanolib.accounts.get_account_id(
+                    prefix=nanolib.AccountIDPrefix.NANO,
+                    public_key=account_key.account.hex(),
+                )
+
+                data_account["frontier"] = account_info.head.hex().upper()
+                data_account["open_block"] = account_info.open_block.hex().upper()
+                # TODO
+                data_account["representative_block"] = None
+                data_account["modified_timestamp"] = datetime.datetime.utcfromtimestamp(
+                    account_info.modified
+                ).strftime("%s")
+
+                data_account["block_count"] = account_info.block_count
+                data_account["confirmation_height"] = height_info.height
+                data_account[
+                    "confirmation_height_frontier"
+                ] = height_info.frontier.hex().upper()
+
+                data_accounts.append(data_account)
+
+                if len(data_accounts) == batch_size:
+                    df = pd.DataFrame(data_accounts)
+                    index = count
+                    fastparquet.write(
+                        "accounts.parquet",
+                        df,
+                        write_index=index,
+                        compression="GZIP",
+                        append=append,
+                    )
+                    data_accounts = []
+                    append = True
 
                 count += 1
                 if count >= args.count:
+                    df = pd.DataFrame(data_accounts)
+                    fastparquet.write(
+                        "accounts.parquet",
+                        df,
+                        write_index=index,
+                        compression="GZIP",
+                        append=append,
+                    )
                     break
 
             cursor.close()
@@ -328,8 +350,13 @@ try:
                 if len(data_blocks) == batch_size:
                     df = pd.DataFrame(data_blocks)
                     index = count
-                    fastparquet.write('blocks.parquet', df,
-                                      write_index=index, compression='GZIP', append=append)
+                    fastparquet.write(
+                        "blocks.parquet",
+                        df,
+                        write_index=index,
+                        compression="GZIP",
+                        append=append,
+                    )
                     data_blocks = []
                     append = True
 
@@ -337,8 +364,13 @@ try:
 
                 if count >= args.count:
                     df = pd.DataFrame(data_blocks)
-                    fastparquet.write('blocks.parquet', df,
-                                      write_index=index, compression='GZIP', append=append)
+                    fastparquet.write(
+                        "blocks.parquet",
+                        df,
+                        write_index=index,
+                        compression="GZIP",
+                        append=append,
+                    )
                     break
             cursor.close()
         if count == 0:
