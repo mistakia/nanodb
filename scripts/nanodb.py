@@ -1,14 +1,15 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
 from pkg_resources import parse_version
-from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
+import kaitaistruct
+from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 from enum import Enum
 
 
-if parse_version(ks_version) < parse_version("0.7"):
+if parse_version(kaitaistruct.__version__) < parse_version("0.9"):
     raise Exception(
-        "Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s"
-        % (ks_version)
+        "Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s"
+        % (kaitaistruct.__version__)
     )
 
 
@@ -26,7 +27,7 @@ class Nanodb(KaitaiStruct):
         version = 1
 
     class DatabaseVersion(Enum):
-        value = 17
+        value = 19
 
     class EnumEpoch(Enum):
         invalid = 0
@@ -50,23 +51,7 @@ class Nanodb(KaitaiStruct):
     def _read(self):
         pass
 
-    class StateBlockSideband(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.successor = self._io.read_bytes(32)
-            self.height = self._io.read_u8be()
-            self.timestamp = self._io.read_u8be()
-            self.is_send = self._io.read_bits_int(1) != 0
-            self.is_receive = self._io.read_bits_int(1) != 0
-            self.is_epoch = self._io.read_bits_int(1) != 0
-            self.epoch = self._root.EnumEpoch(self._io.read_bits_int(5))
-
-    class ReceiveKey(KaitaiStruct):
+    class BlocksKey(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
@@ -98,18 +83,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.key = self._root.UncheckedKey(self._io, self, self._root)
-            self.value = self._root.UncheckedValue(self._io, self, self._root)
-
-    class StateBlocksKey(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.hash = self._io.read_bytes(32)
+            self.key = Nanodb.UncheckedKey(self._io, self, self._root)
+            self.value = Nanodb.UncheckedValue(self._io, self, self._root)
 
     class MetaVersion(KaitaiStruct):
         """Value of key meta_key#version."""
@@ -122,16 +97,6 @@ class Nanodb(KaitaiStruct):
 
         def _read(self):
             self.database_version = self._io.read_bytes(32)
-
-    class OpenKey(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.hash = self._io.read_bytes(32)
 
     class VoteValue(KaitaiStruct):
         """Vote and block(s)."""
@@ -146,12 +111,14 @@ class Nanodb(KaitaiStruct):
             self.account = self._io.read_bytes(32)
             self.signature = self._io.read_bytes(64)
             self.sequence = self._io.read_u8le()
-            self.block_type = self._root.EnumBlocktype(self._io.read_u1())
-            if self.block_type == self._root.EnumBlocktype.not_a_block:
-                self.votebyhash = self._root.VoteByHash(self._io, self, self._root)
+            self.block_type = KaitaiStream.resolve_enum(
+                Nanodb.EnumBlocktype, self._io.read_u1()
+            )
+            if self.block_type == Nanodb.EnumBlocktype.not_a_block:
+                self.votebyhash = Nanodb.VoteByHash(self._io, self, self._root)
 
-            if self.block_type != self._root.EnumBlocktype.not_a_block:
-                self.block = self._root.BlockSelector(
+            if self.block_type != Nanodb.EnumBlocktype.not_a_block:
+                self.block = Nanodb.BlockSelector(
                     self.block_type.value, self._io, self, self._root
                 )
 
@@ -165,6 +132,17 @@ class Nanodb(KaitaiStruct):
         def _read(self):
             self.hash = self._io.read_bytes(32)
 
+    class Blocks(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.key = Nanodb.BlocksKey(self._io, self, self._root)
+            self.value = Nanodb.BlocksValue(self._io, self, self._root)
+
     class BlockSelector(KaitaiStruct):
         """Selects a block based on the argument."""
 
@@ -177,18 +155,18 @@ class Nanodb(KaitaiStruct):
 
         def _read(self):
             _on = self.arg_block_type
-            if _on == self._root.EnumBlocktype.open.value:
-                self.block = self._root.BlockOpen(self._io, self, self._root)
-            elif _on == self._root.EnumBlocktype.state.value:
-                self.block = self._root.BlockState(self._io, self, self._root)
-            elif _on == self._root.EnumBlocktype.receive.value:
-                self.block = self._root.BlockReceive(self._io, self, self._root)
-            elif _on == self._root.EnumBlocktype.send.value:
-                self.block = self._root.BlockSend(self._io, self, self._root)
-            elif _on == self._root.EnumBlocktype.change.value:
-                self.block = self._root.BlockChange(self._io, self, self._root)
+            if _on == Nanodb.EnumBlocktype.receive.value:
+                self.block = Nanodb.BlockReceive(self._io, self, self._root)
+            elif _on == Nanodb.EnumBlocktype.change.value:
+                self.block = Nanodb.BlockChange(self._io, self, self._root)
+            elif _on == Nanodb.EnumBlocktype.state.value:
+                self.block = Nanodb.BlockState(self._io, self, self._root)
+            elif _on == Nanodb.EnumBlocktype.open.value:
+                self.block = Nanodb.BlockOpen(self._io, self, self._root)
+            elif _on == Nanodb.EnumBlocktype.send.value:
+                self.block = Nanodb.BlockSend(self._io, self, self._root)
             else:
-                self.block = self._root.IgnoreUntilEof(self._io, self, self._root)
+                self.block = Nanodb.IgnoreUntilEof(self._io, self, self._root)
 
     class BlockReceive(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -237,16 +215,6 @@ class Nanodb(KaitaiStruct):
             self.account = self._io.read_bytes(32)
             self.hash = self._io.read_bytes(32)
 
-    class ChangeKey(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.hash = self._io.read_bytes(32)
-
     class PendingValue(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -257,7 +225,7 @@ class Nanodb(KaitaiStruct):
         def _read(self):
             self.source = self._io.read_bytes(32)
             self.amount = self._io.read_bytes(16)
-            self.epoch = self._root.EnumEpoch(self._io.read_u1())
+            self.epoch = KaitaiStream.resolve_enum(Nanodb.EnumEpoch, self._io.read_u1())
 
     class VoteKey(KaitaiStruct):
         """Key of the vote table."""
@@ -270,17 +238,6 @@ class Nanodb(KaitaiStruct):
 
         def _read(self):
             self.account = self._io.read_bytes(32)
-
-    class Receive(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.key = self._root.ReceiveKey(self._io, self, self._root)
-            self.value = self._root.ReceiveValue(self._io, self, self._root)
 
     class AccountsKey(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -302,8 +259,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.key = self._root.FrontiersKey(self._io, self, self._root)
-            self.value = self._root.FrontiersValue(self._io, self, self._root)
+            self.key = Nanodb.FrontiersKey(self._io, self, self._root)
+            self.value = Nanodb.FrontiersValue(self._io, self, self._root)
 
     class AccountsValue(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -348,30 +305,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.block = self._root.BlockReceive(self._io, self, self._root)
-            self.sideband = self._root.ReceiveSideband(self._io, self, self._root)
-
-    class Open(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.key = self._root.OpenKey(self._io, self, self._root)
-            self.value = self._root.OpenValue(self._io, self, self._root)
-
-    class StateBlocksValue(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.block = self._root.BlockState(self._io, self, self._root)
-            self.sideband = self._root.StateBlockSideband(self._io, self, self._root)
+            self.block = Nanodb.BlockReceive(self._io, self, self._root)
+            self.sideband = Nanodb.ReceiveSideband(self._io, self, self._root)
 
     class VoteByHashEntry(KaitaiStruct):
         """The serialized hash in VBH is prepended by not_a_block."""
@@ -385,7 +320,9 @@ class Nanodb(KaitaiStruct):
 
         def _read(self):
             if self.idx > 0:
-                self.block_type = self._root.EnumBlocktype(self._io.read_u1())
+                self.block_type = KaitaiStream.resolve_enum(
+                    Nanodb.EnumBlocktype, self._io.read_u1()
+                )
 
             self.block_hash = self._io.read_bytes(32)
 
@@ -421,28 +358,6 @@ class Nanodb(KaitaiStruct):
                         break
                     i += 1
 
-    class Change(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.key = self._root.ChangeKey(self._io, self, self._root)
-            self.value = self._root.ChangeValue(self._io, self, self._root)
-
-    class StateBlocks(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.key = self._root.StateBlocksKey(self._io, self, self._root)
-            self.value = self._root.StateBlocksValue(self._io, self, self._root)
-
     class SendValue(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -451,8 +366,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.block = self._root.BlockSend(self._io, self, self._root)
-            self.sideband = self._root.SendSideband(self._io, self, self._root)
+            self.block = Nanodb.BlockSend(self._io, self, self._root)
+            self.sideband = Nanodb.SendSideband(self._io, self, self._root)
 
     class UncheckedKey(KaitaiStruct):
         """Key of the unchecked table."""
@@ -466,6 +381,24 @@ class Nanodb(KaitaiStruct):
         def _read(self):
             self.previous = self._io.read_bytes(32)
             self.hash = self._io.read_bytes(32)
+
+    class StateSideband(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.successor = self._io.read_bytes(32)
+            self.height = self._io.read_u8be()
+            self.timestamp = self._io.read_u8be()
+            self.is_send = self._io.read_bits_int_be(1) != 0
+            self.is_receive = self._io.read_bits_int_be(1) != 0
+            self.is_epoch = self._io.read_bits_int_be(1) != 0
+            self.epoch = KaitaiStream.resolve_enum(
+                Nanodb.EnumEpoch, self._io.read_bits_int_be(5)
+            )
 
     class OnlineWeightKey(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -487,8 +420,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.key = self._root.ConfirmationHeightKey(self._io, self, self._root)
-            self.value = self._root.ConfirmationHeightValue(self._io, self, self._root)
+            self.key = Nanodb.ConfirmationHeightKey(self._io, self, self._root)
+            self.value = Nanodb.ConfirmationHeightValue(self._io, self, self._root)
 
     class ChangeSideband(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -550,6 +483,31 @@ class Nanodb(KaitaiStruct):
             self.height = self._io.read_u8be()
             self.timestamp = self._io.read_u8be()
 
+    class BlocksValue(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.block_type = KaitaiStream.resolve_enum(
+                Nanodb.EnumBlocktype, self._io.read_u1()
+            )
+            _on = self.block_type
+            if _on == Nanodb.EnumBlocktype.change:
+                self.block_value = Nanodb.ChangeValue(self._io, self, self._root)
+            elif _on == Nanodb.EnumBlocktype.send:
+                self.block_value = Nanodb.SendValue(self._io, self, self._root)
+            elif _on == Nanodb.EnumBlocktype.receive:
+                self.block_value = Nanodb.ReceiveValue(self._io, self, self._root)
+            elif _on == Nanodb.EnumBlocktype.state:
+                self.block_value = Nanodb.StateValue(self._io, self, self._root)
+            elif _on == Nanodb.EnumBlocktype.open:
+                self.block_value = Nanodb.OpenValue(self._io, self, self._root)
+            else:
+                self.block_value = Nanodb.IgnoreUntilEof(self._io, self, self._root)
+
     class BlockState(KaitaiStruct):
         """State block."""
 
@@ -576,8 +534,19 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.block = self._root.BlockOpen(self._io, self, self._root)
-            self.sideband = self._root.OpenSideband(self._io, self, self._root)
+            self.block = Nanodb.BlockOpen(self._io, self, self._root)
+            self.sideband = Nanodb.OpenSideband(self._io, self, self._root)
+
+    class StateValue(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.block = Nanodb.BlockState(self._io, self, self._root)
+            self.sideband = Nanodb.StateSideband(self._io, self, self._root)
 
     class ReceiveSideband(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -601,8 +570,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.block = self._root.BlockChange(self._io, self, self._root)
-            self.sideband = self._root.ChangeSideband(self._io, self, self._root)
+            self.block = Nanodb.BlockChange(self._io, self, self._root)
+            self.sideband = Nanodb.ChangeSideband(self._io, self, self._root)
 
     class VoteByHash(KaitaiStruct):
         """A sequence of up to 12 hashes, terminated by EOF."""
@@ -618,7 +587,7 @@ class Nanodb(KaitaiStruct):
                 self.hashes = []
                 i = 0
                 while True:
-                    _ = self._root.VoteByHashEntry(i, self._io, self, self._root)
+                    _ = Nanodb.VoteByHashEntry(i, self._io, self, self._root)
                     self.hashes.append(_)
                     if (i == 12) or (self._io.is_eof()):
                         break
@@ -645,8 +614,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.key = self._root.VoteKey(self._io, self, self._root)
-            self.value = self._root.VoteValue(self._io, self, self._root)
+            self.key = Nanodb.VoteKey(self._io, self, self._root)
+            self.value = Nanodb.VoteValue(self._io, self, self._root)
 
     class Pending(KaitaiStruct):
         """Pending table."""
@@ -658,18 +627,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.key = self._root.PendingKey(self._io, self, self._root)
-            self.value = self._root.PendingValue(self._io, self, self._root)
-
-    class SendKey(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.hash = self._io.read_bytes(32)
+            self.key = Nanodb.PendingKey(self._io, self, self._root)
+            self.value = Nanodb.PendingValue(self._io, self, self._root)
 
     class Accounts(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -679,8 +638,8 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.key = self._root.AccountsKey(self._io, self, self._root)
-            self.value = self._root.AccountsValue(self._io, self, self._root)
+            self.key = Nanodb.AccountsKey(self._io, self, self._root)
+            self.value = Nanodb.AccountsValue(self._io, self, self._root)
 
     class UncheckedValue(KaitaiStruct):
         """Information about an unchecked block."""
@@ -692,13 +651,17 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.block_type = self._root.EnumBlocktype(self._io.read_u1())
-            self.block = self._root.BlockSelector(
+            self.block_type = KaitaiStream.resolve_enum(
+                Nanodb.EnumBlocktype, self._io.read_u1()
+            )
+            self.block = Nanodb.BlockSelector(
                 self.block_type.value, self._io, self, self._root
             )
             self.account = self._io.read_bytes(32)
             self.modified = self._io.read_u8le()
-            self.verified = self._root.EnumSignatureVerification(self._io.read_u1())
+            self.verified = KaitaiStream.resolve_enum(
+                Nanodb.EnumSignatureVerification, self._io.read_u1()
+            )
 
     class OnlineWeight(KaitaiStruct):
         """Stores online weight trended over time."""
@@ -710,16 +673,5 @@ class Nanodb(KaitaiStruct):
             self._read()
 
         def _read(self):
-            self.key = self._root.OnlineWeightKey(self._io, self, self._root)
-            self.value = self._root.OnlineWeightValue(self._io, self, self._root)
-
-    class Send(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.key = self._root.SendKey(self._io, self, self._root)
-            self.value = self._root.SendValue(self._io, self, self._root)
+            self.key = Nanodb.OnlineWeightKey(self._io, self, self._root)
+            self.value = Nanodb.OnlineWeightValue(self._io, self, self._root)

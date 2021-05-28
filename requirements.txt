@@ -1,4 +1,4 @@
-kaitaistruct==0.8
+kaitaistruct==0.9
 lmdb==0.99
 nanolib==0.3
 mysql-connector-python===8.0.23

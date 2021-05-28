@@ -21,6 +21,20 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 - Basic account classifiers
 - Block classifiers (i.e. spam)
 
+## Usage
+
+#### Read
+
+```py
+python3 scripts/read.py --filename [path] [--table [all | table_name] ] [--count [10] ]
+```
+
+#### Import
+
+```py
+python3 scripts/import.py --filename [path] [--table [all | table_name] ] [--count [10] ]
+```
+
 ## Nano IPFS-Log
 
 A spec allowing for per account data structures on IPFS. This would alow applications to subscribe for updates on a per account basis via [IPFS pubsub](https://docs.libp2p.io/concepts/publish-subscribe/). Upon joining an [IPFS pubsub topic](https://docs.libp2p.io/concepts/publish-subscribe/) using the database address, applications would exchange heads (i.e. frontiers), enabling them to sync any missing entries. Each nano state block is content addressable. This system supports the trustless propgation of valid/checked blocks but can not be relied on for block confirmation information (or fork resolution). You would separately have to request votes from the nano network on heads (i.e. frontiers) and the ability to track representative voting weight.

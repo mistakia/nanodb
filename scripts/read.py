@@ -10,7 +10,7 @@ from nanodb import Nanodb
 from kaitaistruct import KaitaiStream
 
 
-def print_state_block(block, level):
+def print_state_block(block, level, sideband=None):
     print(
         "{}account         : {}".format(
             " " * level,
@@ -45,9 +45,22 @@ def print_state_block(block, level):
     )
     print("{}signature       : {}".format(" " * level, block.signature.hex().upper()))
     print("{}work            : {}".format(" " * level, hex(block.work)))
+    if sideband:
+        print("  sideband:")
+        print("    successor     : {}".format(sideband.successor.hex().upper()))
+        print("    height        : {}".format(sideband.height))
+        print(
+            "    timestamp     : {}".format(
+                datetime.datetime.utcfromtimestamp(sideband.timestamp)
+            )
+        )
+        print("    is_send       : {}".format(sideband.is_send))
+        print("    is_receive    : {}".format(sideband.is_receive))
+        print("    is_epoch      : {}".format(sideband.is_epoch))
+        print("    epoch         : {}".format(sideband.epoch.name))
 
 
-def print_send_block(block, level):
+def print_send_block(block, level, sideband=None):
     print("{}previous        : {}".format(" " * level, block.previous.hex().upper()))
     print(
         "{}destination     : {}".format(
@@ -65,15 +78,56 @@ def print_send_block(block, level):
     print("{}signature       : {}".format(" " * level, block.signature.hex().upper()))
     print("{}work            : {}".format(" " * level, hex(block.work)))
 
+    if sideband:
+        print("  sideband:")
+        print("    successor     : {}".format(sideband.successor.hex().upper()))
+        print(
+            "    account       : {}".format(
+                nanolib.accounts.get_account_id(
+                    prefix=nanolib.AccountIDPrefix.NANO,
+                    public_key=sideband.account.hex(),
+                )
+            )
+        )
+        print("    height        : {}".format(sideband.height))
+        print(
+            "    timestamp     : {}".format(
+                datetime.datetime.utcfromtimestamp(sideband.timestamp)
+            )
+        )
 
-def print_receive_block(block, level):
+
+def print_receive_block(block, level, sideband=None):
     print("{}previous        : {}".format(" " * level, block.previous.hex().upper()))
     print("{}source hash     : {}".format(" " * level, block.source.hex().upper()))
     print("{}signature       : {}".format(" " * level, block.signature.hex().upper()))
     print("{}work            : {}".format(" " * level, hex(block.work)))
 
+    if sideband:
+        print("  sideband:")
+        print("    successor     : {}".format(sideband.successor.hex().upper()))
+        print(
+            "    account       : {}".format(
+                nanolib.accounts.get_account_id(
+                    prefix=nanolib.AccountIDPrefix.NANO,
+                    public_key=sideband.account.hex(),
+                )
+            )
+        )
+        print("    height        : {}".format(sideband.height))
+        print(
+            "    balance       : {}".format(
+                nanolib.blocks.parse_hex_balance(sideband.balance.hex().upper())
+            )
+        )
+        print(
+            "    timestamp     : {}".format(
+                datetime.datetime.utcfromtimestamp(sideband.timestamp)
+            )
+        )
 
-def print_open_block(block, level):
+
+def print_open_block(block, level, sideband=None):
     print(
         "{}account         : {}".format(
             " " * level,
@@ -95,8 +149,22 @@ def print_open_block(block, level):
     print("{}signature       : {}".format(" " * level, block.signature.hex().upper()))
     print("{}work            : {}".format(" " * level, hex(block.work)))
 
+    if sideband:
+        print("  sideband:")
+        print("    successor     : {}".format(sideband.successor.hex().upper()))
+        print(
+            "    balance       : {}".format(
+                nanolib.blocks.parse_hex_balance(sideband.balance.hex().upper())
+            )
+        )
+        print(
+            "    timestamp     : {}".format(
+                datetime.datetime.utcfromtimestamp(sideband.timestamp)
+            )
+        )
 
-def print_change_block(block, level):
+
+def print_change_block(block, level, sideband=None):
     print("{}previous        : {}".format(" " * level, block.previous.hex().upper()))
     print(
         "{}representative  : {}".format(
@@ -109,6 +177,29 @@ def print_change_block(block, level):
     )
     print("{}signature       : {}".format(" " * level, block.signature.hex().upper()))
     print("{}work            : {}".format(" " * level, hex(block.work)))
+
+    if sideband:
+        print("  sideband:")
+        print("    successor     : {}".format(sideband.successor.hex().upper()))
+        print(
+            "    account       : {}".format(
+                nanolib.accounts.get_account_id(
+                    prefix=nanolib.AccountIDPrefix.NANO,
+                    public_key=sideband.account.hex(),
+                )
+            )
+        )
+        print("    height        : {}".format(sideband.height))
+        print(
+            "    balance       : {}".format(
+                nanolib.blocks.parse_hex_balance(sideband.balance.hex().upper())
+            )
+        )
+        print(
+            "    timestamp     : {}".format(
+                datetime.datetime.utcfromtimestamp(sideband.timestamp)
+            )
+        )
 
 
 def print_header(header):
@@ -214,10 +305,10 @@ try:
         if count == 0:
             print("(empty)\n")
 
-    # Send table
-    if args.table == "all" or args.table == "send":
-        print_header("send")
-        state_db = env.open_db("send".encode())
+    # Blocks table
+    if args.table == "all" or args.table == "blocks":
+        print_header("blocks")
+        state_db = env.open_db("blocks".encode())
 
         count = 0
         with env.begin() as txn:
@@ -228,241 +319,30 @@ try:
             for key, value in cursor:
                 keystream = KaitaiStream(io.BytesIO(key))
                 valstream = KaitaiStream(io.BytesIO(value))
-                send_key = Nanodb.SendKey(keystream)
-                send_block = Nanodb.SendValue(valstream, None, Nanodb(None))
+                bkey = Nanodb.BlocksKey(keystream)
+                bvalue = Nanodb.BlocksValue(valstream, None, Nanodb(None))
+                btype = bvalue.block_type
 
-                print("hash              : {}".format(send_key.hash.hex().upper()))
-                print_send_block(send_block.block, 2)
-                print("  sideband:")
-                print(
-                    "    successor     : {}".format(
-                        send_block.sideband.successor.hex().upper()
-                    )
-                )
-                print(
-                    "    account       : {}".format(
-                        nanolib.accounts.get_account_id(
-                            prefix=nanolib.AccountIDPrefix.NANO,
-                            public_key=send_block.sideband.account.hex(),
-                        )
-                    )
-                )
-                print("    height        : {}".format(send_block.sideband.height))
-                print(
-                    "    timestamp     : {}".format(
-                        datetime.datetime.utcfromtimestamp(
-                            send_block.sideband.timestamp
-                        )
-                    )
-                )
-                print("")
+                print("hash              : {}".format(bkey.hash.hex().upper()))
 
-                count += 1
-                if count >= args.count:
-                    break
-            cursor.close()
-        if count == 0:
-            print("(empty)\n")
+                block = bvalue.block_value.block
+                sideband = bvalue.block_value.sideband
+                if btype == Nanodb.EnumBlocktype.change:
+                    print("type              : change")
+                    print_change_block(block, 2, sideband)
+                elif btype == Nanodb.EnumBlocktype.send:
+                    print("type              : send")
+                    print_send_block(block, 2, sideband)
+                elif btype == Nanodb.EnumBlocktype.receive:
+                    print("type              : receive")
+                    print_receive_block(block, 2, sideband)
+                elif btype == Nanodb.EnumBlocktype.state:
+                    print("type              : state")
+                    print_state_block(block, 2, sideband)
+                elif btype == Nanodb.EnumBlocktype.open:
+                    print("type              : open")
+                    print_open_block(block, 2, sideband)
 
-    # Receive table
-    if args.table == "all" or args.table == "receive":
-        print_header("receive")
-        state_db = env.open_db("receive".encode())
-
-        count = 0
-        with env.begin() as txn:
-            cursor = txn.cursor(state_db)
-            if args.key:
-                cursor.set_key(bytearray.fromhex(args.key))
-            count = 0
-            for key, value in cursor:
-                keystream = KaitaiStream(io.BytesIO(key))
-                valstream = KaitaiStream(io.BytesIO(value))
-                receive_key = Nanodb.ReceiveKey(keystream)
-                receive_block = Nanodb.ReceiveValue(valstream, None, Nanodb(None))
-
-                print("hash              : {}".format(receive_key.hash.hex().upper()))
-                print_receive_block(receive_block.block, 2)
-                print("  sideband:")
-                print(
-                    "    successor     : {}".format(
-                        receive_block.sideband.successor.hex().upper()
-                    )
-                )
-                print(
-                    "    account       : {}".format(
-                        nanolib.accounts.get_account_id(
-                            prefix=nanolib.AccountIDPrefix.NANO,
-                            public_key=receive_block.sideband.account.hex(),
-                        )
-                    )
-                )
-                print("    height        : {}".format(receive_block.sideband.height))
-                print(
-                    "    balance       : {}".format(
-                        nanolib.blocks.parse_hex_balance(
-                            receive_block.sideband.balance.hex().upper()
-                        )
-                    )
-                )
-                print(
-                    "    timestamp     : {}".format(
-                        datetime.datetime.utcfromtimestamp(
-                            receive_block.sideband.timestamp
-                        )
-                    )
-                )
-                print("")
-
-                count += 1
-                if count >= args.count:
-                    break
-            cursor.close()
-        if count == 0:
-            print("(empty)\n")
-
-    # Open table
-    if args.table == "all" or args.table == "open":
-        print_header("open")
-        state_db = env.open_db("open".encode())
-
-        count = 0
-        with env.begin() as txn:
-            cursor = txn.cursor(state_db)
-            if args.key:
-                cursor.set_key(bytearray.fromhex(args.key))
-            count = 0
-            for key, value in cursor:
-                keystream = KaitaiStream(io.BytesIO(key))
-                valstream = KaitaiStream(io.BytesIO(value))
-                open_key = Nanodb.OpenKey(keystream)
-                open_block = Nanodb.OpenValue(valstream, None, Nanodb(None))
-
-                print("hash              : {}".format(open_key.hash.hex().upper()))
-                print_open_block(open_block.block, 2)
-                print("  sideband:")
-                print(
-                    "    successor     : {}".format(
-                        open_block.sideband.successor.hex().upper()
-                    )
-                )
-                print(
-                    "    balance       : {}".format(
-                        nanolib.blocks.parse_hex_balance(
-                            open_block.sideband.balance.hex().upper()
-                        )
-                    )
-                )
-                print(
-                    "    timestamp     : {}".format(
-                        datetime.datetime.utcfromtimestamp(
-                            open_block.sideband.timestamp
-                        )
-                    )
-                )
-                print("")
-
-                count += 1
-                if count >= args.count:
-                    break
-            cursor.close()
-        if count == 0:
-            print("(empty)\n")
-
-    # Change table
-    if args.table == "all" or args.table == "change":
-        print_header("change")
-        state_db = env.open_db("change".encode())
-
-        count = 0
-        with env.begin() as txn:
-            cursor = txn.cursor(state_db)
-            if args.key:
-                cursor.set_key(bytearray.fromhex(args.key))
-            count = 0
-            for key, value in cursor:
-                keystream = KaitaiStream(io.BytesIO(key))
-                valstream = KaitaiStream(io.BytesIO(value))
-                change_key = Nanodb.ChangeKey(keystream)
-                change_block = Nanodb.ChangeValue(valstream, None, Nanodb(None))
-
-                print("hash              : {}".format(change_key.hash.hex().upper()))
-                print_change_block(change_block.block, 2)
-                print("  sideband:")
-                print(
-                    "    successor     : {}".format(
-                        change_block.sideband.successor.hex().upper()
-                    )
-                )
-                print(
-                    "    account       : {}".format(
-                        nanolib.accounts.get_account_id(
-                            prefix=nanolib.AccountIDPrefix.NANO,
-                            public_key=change_block.sideband.account.hex(),
-                        )
-                    )
-                )
-                print("    height        : {}".format(change_block.sideband.height))
-                print(
-                    "    balance       : {}".format(
-                        nanolib.blocks.parse_hex_balance(
-                            change_block.sideband.balance.hex().upper()
-                        )
-                    )
-                )
-                print(
-                    "    timestamp     : {}".format(
-                        datetime.datetime.utcfromtimestamp(
-                            change_block.sideband.timestamp
-                        )
-                    )
-                )
-                print("")
-
-                count += 1
-                if count >= args.count:
-                    break
-            cursor.close()
-        if count == 0:
-            print("(empty)\n")
-
-    # State blocks table
-    if args.table == "all" or args.table == "state_blocks":
-        print_header("state_blocks")
-        state_db = env.open_db("state_blocks".encode())
-
-        count = 0
-        with env.begin() as txn:
-            cursor = txn.cursor(state_db)
-            if args.key:
-                cursor.set_key(bytearray.fromhex(args.key))
-            count = 0
-            for key, value in cursor:
-                keystream = KaitaiStream(io.BytesIO(key))
-                valstream = KaitaiStream(io.BytesIO(value))
-                state_key = Nanodb.StateBlocksKey(keystream)
-                state_block = Nanodb.StateBlocksValue(valstream, None, Nanodb(None))
-
-                print("hash              : {}".format(state_key.hash.hex().upper()))
-                print_state_block(state_block.block, 2)
-                print("  sideband:")
-                print(
-                    "    successor     : {}".format(
-                        state_block.sideband.successor.hex().upper()
-                    )
-                )
-                print("    height        : {}".format(state_block.sideband.height))
-                print(
-                    "    timestamp     : {}".format(
-                        datetime.datetime.utcfromtimestamp(
-                            state_block.sideband.timestamp
-                        )
-                    )
-                )
-                print("    is_send       : {}".format(state_block.sideband.is_send))
-                print("    is_receive    : {}".format(state_block.sideband.is_receive))
-                print("    is_epoch      : {}".format(state_block.sideband.is_epoch))
-                print("    epoch         : {}".format(state_block.sideband.epoch.name))
                 print("")
 
                 count += 1

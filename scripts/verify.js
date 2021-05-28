@@ -52,7 +52,9 @@ const main = async () => {
     process.stdout.write(`\rVerifying / ${index} / ${account.account}`)
     if (account.frontier) {
       if (account.block_count > blockLimit) {
-        console.log(`\nSkipping ${account.account} block count, ${account.block_count}, exceeds limit`)
+        console.log(
+          `\nSkipping ${account.account} block count, ${account.block_count}, exceeds limit`
+        )
         continue
       }
 
