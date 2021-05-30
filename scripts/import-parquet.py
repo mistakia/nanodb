@@ -114,13 +114,22 @@ try:
                     end="\r",
                 )
 
-                confirmation_value = txn.get(
-                    account_key.account, default=None, db=confirmation_db
-                )
-                confirmation_valstream = KaitaiStream(io.BytesIO(confirmation_value))
-                height_info = Nanodb.ConfirmationHeightValue(
-                    confirmation_valstream, None, Nanodb(None)
-                )
+                try:
+                    confirmation_value = txn.get(
+                        account_key.account, default=None, db=confirmation_db
+                    )
+                    confirmation_valstream = KaitaiStream(
+                        io.BytesIO(confirmation_value)
+                    )
+                    height_info = Nanodb.ConfirmationHeightValue(
+                        confirmation_valstream, None, Nanodb(None)
+                    )
+                    height = height_info.height
+                    height_frontier = height_info.frontier.hex().upper()
+                except Exception as ex:
+                    print(ex)
+                    height = 0
+                    height_frontier = None
 
                 data_account = {}
                 balance = nanolib.blocks.parse_hex_balance(
@@ -142,10 +151,10 @@ try:
                 ).strftime("%s")
 
                 data_account["block_count"] = account_info.block_count
-                data_account["confirmation_height"] = height_info.height
+                data_account["confirmation_height"] = height
                 data_account[
                     "confirmation_height_frontier"
-                ] = height_info.frontier.hex().upper()
+                ] = height_frontier
 
                 data_accounts.append(data_account)
 
