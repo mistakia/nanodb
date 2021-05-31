@@ -8,8 +8,10 @@ import lmdb
 import nanolib
 import json
 import math
-import fastparquet
+import decimal
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from nanodb import Nanodb
 from kaitaistruct import KaitaiStream
@@ -29,9 +31,9 @@ def get_state_block(block):
 
     return {
         "height": block.sideband.height,
-        "local_timestamp": datetime.datetime.utcfromtimestamp(
+        "local_timestamp": int(datetime.datetime.utcfromtimestamp(
             block.sideband.timestamp
-        ).strftime("%s"),
+        ).strftime("%s")),
         "subtype": subtype,
     }
 
@@ -39,9 +41,9 @@ def get_state_block(block):
 def get_legacy_block(block):
     return {
         "height": getattr(block.sideband, "height", 1),
-        "local_timestamp": datetime.datetime.utcfromtimestamp(
+        "local_timestamp": int(datetime.datetime.utcfromtimestamp(
             block.sideband.timestamp
-        ).strftime("%s"),
+        ).strftime("%s")),
         "subtype": None,
     }
 
@@ -82,6 +84,7 @@ try:
 
     env = lmdb.open(filename, subdir=False, max_dbs=100)
 
+    pqwriter = None
     # Accounts table
     if args.table == "all" or args.table == "accounts":
         print("Importing Accounts")
@@ -89,10 +92,22 @@ try:
         confirmation_db = env.open_db("confirmation_height".encode())
 
         count = 0
-        index = 0
-        append = False
         batch_size = 100000
         data_accounts = []
+
+        fields = [
+            pa.field('balance', pa.decimal128(30,0)),
+            pa.field('account', pa.string()),
+            pa.field('frontier', pa.string()),
+            pa.field('open_block', pa.string()),
+            pa.field('representative_block', pa.string()),
+            pa.field('modified_timestamp', pa.int64()),
+            pa.field('block_count', pa.int64()),
+            pa.field('confirmation_height', pa.int64()),
+            pa.field('confirmation_height_frontier', pa.string())
+        ]
+        schema = pa.schema(fields)
+        pqwriter = pq.ParquetWriter('accounts.parquet', schema)
 
         with env.begin() as txn:
             cursor = txn.cursor(accounts_db)
@@ -136,7 +151,7 @@ try:
                     account_info.balance.hex().upper()
                 )
 
-                data_account["balance"] = str(balance)
+                data_account["balance"] = decimal.Decimal(balance)
                 data_account["account"] = nanolib.accounts.get_account_id(
                     prefix=nanolib.AccountIDPrefix.NANO,
                     public_key=account_key.account.hex(),
@@ -159,28 +174,26 @@ try:
                 data_accounts.append(data_account)
 
                 if len(data_accounts) == batch_size:
-                    df = pd.DataFrame(data_accounts)
-                    index = count
-                    fastparquet.write(
-                        "accounts.parquet",
-                        df,
-                        write_index=index,
-                        compression="GZIP",
-                        append=append,
+                    df_raw = pd.DataFrame(data_accounts)
+                    df_raw = df_raw.astype({"modified_timestamp": int})
+                    table = pa.Table.from_pandas(
+                        df_raw,
+                        schema=schema,
+                        preserve_index=False
                     )
+                    pqwriter.write_table(table)
                     data_accounts = []
-                    append = True
 
                 count += 1
                 if count >= args.count:
-                    df = pd.DataFrame(data_accounts)
-                    fastparquet.write(
-                        "accounts.parquet",
-                        df,
-                        write_index=index,
-                        compression="GZIP",
-                        append=append,
+                    df_raw = pd.DataFrame(data_accounts)
+                    df_raw = df_raw.astype({"modified_timestamp": int})
+                    table = pa.Table.from_pandas(
+                        df_raw,
+                        schema=schema,
+                        preserve_index=False
                     )
+                    pqwriter.write_table(table)
                     break
 
             cursor.close()
@@ -204,6 +217,26 @@ try:
             batch_size = 100000
             data_blocks = []
 
+            fields = [
+                pa.field('height', pa.int64()),
+                pa.field('local_timestamp', pa.int64()),
+                pa.field('subtype', pa.int8()),
+                pa.field('type', pa.int8()),
+                pa.field('hash', pa.string()),
+                pa.field('balance', pa.decimal128(30,0)),
+                pa.field('account', pa.string()),
+                pa.field('previous', pa.string()),
+                pa.field('representative', pa.string()),
+                pa.field('link', pa.string()),
+                pa.field('link_as_account', pa.string()),
+                pa.field('signature', pa.string()),
+                pa.field('work', pa.string()),
+                pa.field('amount', pa.decimal128(30,0)),
+                pa.field('confirmed', pa.bool_())
+            ]
+            schema = pa.schema(fields)
+            pqwriter = pq.ParquetWriter('blocks.parquet', schema)
+
             for key, value in cursor:
                 keystream = KaitaiStream(io.BytesIO(key))
                 valstream = KaitaiStream(io.BytesIO(value))
@@ -224,19 +257,19 @@ try:
 
                 if btype == Nanodb.EnumBlocktype.change:
                     data_block = get_legacy_block(block.block_value)
-                    data_block["type"] = "5"
+                    data_block["type"] = 5
                 elif btype == Nanodb.EnumBlocktype.send:
                     data_block = get_legacy_block(block.block_value)
-                    data_block["type"] = "4"
+                    data_block["type"] = 4
                 elif btype == Nanodb.EnumBlocktype.receive:
                     data_block = get_legacy_block(block.block_value)
-                    data_block["type"] = "3"
+                    data_block["type"] = 3
                 elif btype == Nanodb.EnumBlocktype.state:
                     data_block = get_state_block(block.block_value)
-                    data_block["type"] = "1"
+                    data_block["type"] = 1
                 elif btype == Nanodb.EnumBlocktype.open:
                     data_block = get_legacy_block(block.block_value)
-                    data_block["type"] = "2"
+                    data_block["type"] = 2
 
                 data_block["hash"] = block_key.hash.hex().upper()
                 if (
@@ -251,8 +284,7 @@ try:
                         block.block_value.sideband.balance.hex().upper()
                     )
 
-                data_block["balance"] = str(balance)
-                data_block["confirmed"] = "1"
+                data_block["balance"] = decimal.Decimal(balance)
                 if (
                     btype == Nanodb.EnumBlocktype.send
                     or btype == Nanodb.EnumBlocktype.receive
@@ -348,43 +380,40 @@ try:
                         previous_balance = nanolib.blocks.parse_hex_balance(
                             previous_block.block_value.sideband.balance.hex().upper()
                         )
-                    data_block["amount"] = str(abs(previous_balance - balance))
+                    data_block["amount"] = decimal.Decimal(abs(previous_balance - balance))
                 else:
-                    data_block["amount"] = str(balance)
+                    data_block["amount"] = decimal.Decimal(balance)
 
-                data_block["confirmed"] = "1" if height >= data_block["height"] else "0"
+                data_block["confirmed"] = True if height >= data_block["height"] else False
 
                 data_blocks.append(data_block)
 
                 if len(data_blocks) == batch_size:
-                    df = pd.DataFrame(data_blocks)
-                    index = count
-                    fastparquet.write(
-                        "blocks.parquet",
-                        df,
-                        write_index=index,
-                        compression="GZIP",
-                        append=append,
+                    df_raw = pd.DataFrame(data_blocks)
+                    table = pa.Table.from_pandas(
+                        df_raw,
+                        schema=schema,
+                        preserve_index=False
                     )
+                    pqwriter.write_table(table)
                     data_blocks = []
-                    append = True
 
                 count += 1
 
                 if count >= args.count:
-                    df = pd.DataFrame(data_blocks)
-                    fastparquet.write(
-                        "blocks.parquet",
-                        df,
-                        write_index=index,
-                        compression="GZIP",
-                        append=append,
+                    df_raw = pd.DataFrame(data_blocks)
+                    table = pa.Table.from_pandas(
+                        df_raw,
+                        schema=schema,
+                        preserve_index=False
                     )
+                    pqwriter.write_table(table)
                     break
             cursor.close()
         if count == 0:
             print("(empty)\n")
 
+    pqwriter.close()
     env.close()
 except Exception as ex:
     print(ex)

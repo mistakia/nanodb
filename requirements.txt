@@ -4,4 +4,4 @@ nanolib==0.3
 mysql-connector-python===8.0.23
 black===20.8b1
 pandas==1.2.4
-fastparquet==0.6.3
+pyarrow==4.0.1
