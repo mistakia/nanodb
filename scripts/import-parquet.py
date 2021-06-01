@@ -96,7 +96,7 @@ try:
         data_accounts = []
 
         fields = [
-            pa.field('balance', pa.decimal128(30,0)),
+            pa.field('balance', pa.decimal128(39,0)),
             pa.field('account', pa.string()),
             pa.field('frontier', pa.string()),
             pa.field('open_block', pa.string()),
@@ -223,7 +223,7 @@ try:
                 pa.field('subtype', pa.int8()),
                 pa.field('type', pa.int8()),
                 pa.field('hash', pa.string()),
-                pa.field('balance', pa.decimal128(30,0)),
+                pa.field('balance', pa.decimal128(39,0)),
                 pa.field('account', pa.string()),
                 pa.field('previous', pa.string()),
                 pa.field('representative', pa.string()),
@@ -231,7 +231,7 @@ try:
                 pa.field('link_as_account', pa.string()),
                 pa.field('signature', pa.string()),
                 pa.field('work', pa.string()),
-                pa.field('amount', pa.decimal128(30,0)),
+                pa.field('amount', pa.decimal128(39,0)),
                 pa.field('confirmed', pa.bool_())
             ]
             schema = pa.schema(fields)
