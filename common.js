@@ -69,8 +69,32 @@ const getBlock = async (hash) => {
 const getBlocksInfo = ({ hashes }) => {
   const data = {
     action: 'blocks_info',
+    include_not_found: true,
     json_block: true,
     hashes
+  }
+  const options = rpcRequest(data)
+  return request(options)
+}
+
+const getAccountInfo = ({ account }) => {
+  const data = {
+    action: 'account_info',
+    account,
+    representative: true,
+    weight: true,
+    pending: true,
+    include_confirmed: true
+  }
+  const options = rpcRequest(data)
+  return request(options)
+}
+
+const getChain = ({ block, count }) => {
+  const data = {
+    action: 'chain',
+    block,
+    count
   }
   const options = rpcRequest(data)
   return request(options)
@@ -104,6 +128,8 @@ const formatBlockInfo = ({
 
 module.exports = {
   getFrontierCount,
+  getAccountInfo,
+  getChain,
   getLedger,
   getBlocksInfo,
   getBlock,

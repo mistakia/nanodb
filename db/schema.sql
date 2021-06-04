@@ -16,6 +16,9 @@ CREATE TABLE `accounts` (
   `block_count` int(11) DEFAULT NULL,
   `confirmation_height` int(11) DEFAULT NULL,
   `confirmation_height_frontier` char(64) DEFAULT NULL,
+  `representative` char(65) NOT NULL,
+  `weight` varchar(39) DEFAULT NULL,
+  `pending` varchar(39) DEFAULT NULL,
   `key` char(64) DEFAULT NULL,
   UNIQUE KEY `account` (`account`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
@@ -37,7 +40,7 @@ CREATE TABLE `blocks` (
   `confirmed` tinyint(1) NOT NULL,
   `type` tinyint(1) NOT NULL,
   `account` char(65) NOT NULL,
-  `previous` char(64) NOT NULL,
+  `previous` char(64) DEFAULT NULL,
   `representative` char(65) DEFAULT NULL,
   `link` char(64) DEFAULT NULL,
   `link_as_account` char(65) DEFAULT NULL,

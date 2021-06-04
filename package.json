@@ -9,6 +9,9 @@
     "mysql": "^2.18.1",
     "nanocurrency": "^2.5.0",
     "node-fetch": "^2.6.1",
+    "p-queue": "6.6.2",
+    "reconnecting-websocket": "^4.4.0",
+    "ws": "^7.4.6",
     "yargs": "^16.2.0"
   },
   "devDependencies": {
