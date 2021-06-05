@@ -31,7 +31,7 @@ const request = async (options) => {
 }
 
 const rpcRequest = (data) => {
-  return { url: config.nodeAddress, ...POST(data) }
+  return { url: config.rpcAddress, ...POST(data) }
 }
 
 const getFrontierCount = () => {

@@ -10,11 +10,13 @@ const {
   formatBlockInfo,
   getChain
 } = require('../common')
+const config = require('../config')
 const db = require('../db')
 
 const logger = debug('ws')
 debug.enable('ws')
 
+const MIN_BATCH_SIZE = 1000
 const queue = new PQueue({ concurrency: 1 })
 let frontiersQueue = {}
 let blocksQueue = []
@@ -41,7 +43,7 @@ const processFrontiers = async (account) => {
   )
 
   while (blockCount !== height) {
-    const batchSize = Math.min(accountInfo.block_count, 100)
+    const batchSize = Math.min(accountInfo.block_count, MIN_BATCH_SIZE)
     const chain = await getChain({ block: cursor, count: batchSize })
     cursor = chain.blocks[chain.blocks.length - 1]
     const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
@@ -125,7 +127,7 @@ const upsertFrontiers = async () => {
   setTimeout(upsertFrontiers, 60000)
 }
 
-const ws = new ReconnectingWebSocket('wss://www.nanolooker.com/ws', [], {
+const ws = new ReconnectingWebSocket(config.websocketAddress, [], {
   WebSocket: WS,
   connectionTimeout: 1000,
   maxRetries: 100000,
