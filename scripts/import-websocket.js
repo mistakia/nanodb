@@ -43,6 +43,7 @@ const processFrontiers = async (account) => {
   )
 
   while (blockCount !== height) {
+    logger(`account height: ${height}, current count: ${blockCount}, cursor: ${cursor}`)
     const batchSize = Math.min(accountInfo.block_count, MIN_BATCH_SIZE)
     const chain = await getChain({ block: cursor, count: batchSize })
     cursor = chain.blocks[chain.blocks.length - 1]
