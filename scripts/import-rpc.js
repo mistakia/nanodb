@@ -12,10 +12,35 @@ debug.enable('rpc')
 const {
   getFrontierCount,
   getLedger,
+  getChain,
   getBlocksInfo,
   formatBlockInfo,
   formatAccountInfo
 } = require('../common')
+
+const processAccountBlocks = async ({ account, frontier }) => {
+  logger(`Fetching blocks for ${account}`)
+
+  let height
+  let cursor = frontier
+  do {
+    const chain = await getChain({ block: cursor, count: 10000 })
+    cursor = chain.blocks[chain.blocks.length - 1]
+    const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
+    height = blocks[cursor].height
+
+    const blockInserts = []
+    for (const hash in blocks) {
+      const block = blocks[hash]
+      blockInserts.push({ hash, ...formatBlockInfo(block) })
+    }
+
+    if (blockInserts.length) {
+      logger(`saving ${blockInserts.length} blocks`)
+      await db('blocks').insert(blockInserts).onConflict().merge()
+    }
+  } while (height !== '1')
+}
 
 const main = async () => {
   const { count } = await getFrontierCount()
@@ -54,19 +79,10 @@ const main = async () => {
     await db('accounts').insert(accountInserts).onConflict().merge()
 
     if (argv.b) {
-      const frontierHashes = Object.values(accounts).map((a) => a.frontier)
-      logger(`Fetching ${frontierHashes.length} blocks`)
-
-      const { blocks } = await getBlocksInfo({ hashes: frontierHashes })
-      const blockCount = Object.keys(blocks).length
-      logger(`${blockCount} blocks returned`)
-
-      const blockInserts = []
-      for (const hash in blocks) {
-        const block = blocks[hash]
-        blockInserts.push({ hash, ...formatBlockInfo(block) })
+      for (const [account, accountInfo] of Object.entries(accounts)) {
+        const { frontier } = accountInfo
+        await processAccountBlocks({ frontier, account })
       }
-      await db('blocks').insert(blockInserts).onConflict().merge()
     }
 
     index += batchSize
