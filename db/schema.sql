@@ -42,7 +42,7 @@ CREATE TABLE `blocks` (
   `account` char(65) NOT NULL,
   `previous` char(64) DEFAULT NULL,
   `representative` char(65) DEFAULT NULL,
-  `link` char(64) DEFAULT NULL,
+  `link` char(65) DEFAULT NULL,
   `link_as_account` char(65) DEFAULT NULL,
   `signature` char(128) NOT NULL,
   `work` char(16) NOT NULL,

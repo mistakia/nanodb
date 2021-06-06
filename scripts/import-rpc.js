@@ -18,28 +18,40 @@ const {
   formatAccountInfo
 } = require('../common')
 
+let queue = []
+
+const processQueue = async () => {
+  if (queue.length < 10000) {
+    return
+  }
+
+  const { blocks } = await getBlocksInfo({ hashes: queue })
+  const blockInserts = []
+  for (const hash in blocks) {
+    const block = blocks[hash]
+    blockInserts.push({ hash, ...formatBlockInfo(block) })
+  }
+
+  if (blockInserts.length) {
+    logger(`saving ${blockInserts.length} blocks`)
+    await db('blocks').insert(blockInserts).onConflict().merge()
+  }
+
+  queue = []
+}
+
 const processAccountBlocks = async ({ account, frontier }) => {
   logger(`Fetching blocks for ${account}`)
 
-  let height
+  const batchSize = 1000
+  let chain
   let cursor = frontier
   do {
-    const chain = await getChain({ block: cursor, count: 10000 })
+    chain = await getChain({ block: cursor, count: batchSize })
     cursor = chain.blocks[chain.blocks.length - 1]
-    const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
-    height = blocks[cursor].height
-
-    const blockInserts = []
-    for (const hash in blocks) {
-      const block = blocks[hash]
-      blockInserts.push({ hash, ...formatBlockInfo(block) })
-    }
-
-    if (blockInserts.length) {
-      logger(`saving ${blockInserts.length} blocks`)
-      await db('blocks').insert(blockInserts).onConflict().merge()
-    }
-  } while (height !== '1')
+    queue = queue.concat(chain.blocks)
+    await processQueue()
+  } while (chain.blocks.length === batchSize)
 }
 
 const main = async () => {
