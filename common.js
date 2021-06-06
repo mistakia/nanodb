@@ -1,6 +1,5 @@
 const fs = require('fs')
 const path = require('path')
-const nano = require('nanocurrency')
 const { default: fetch, Request } = require('node-fetch')
 
 const constants = require('./constants')
@@ -47,6 +46,8 @@ const getLedger = ({ account, count = 1, threshold = 100000000000000000 }) => {
   const data = {
     action: 'ledger',
     pending: true,
+    representative: true,
+    weight: true,
     account,
     threshold,
     count
@@ -90,6 +91,29 @@ const getChain = ({ block, count }) => {
   return request(options)
 }
 
+/* eslint-disable camelcase */
+const formatAccountInfo = ({
+  frontier,
+  open_block,
+  representative_block,
+  balance,
+  modified_timestamp,
+  block_count,
+  representative,
+  weight,
+  pending
+}) => ({
+  frontier,
+  open_block,
+  representative_block,
+  balance,
+  modified_timestamp,
+  block_count,
+  representative,
+  weight,
+  pending
+})
+
 const formatBlockInfo = ({
   amount,
   balance,
@@ -117,6 +141,7 @@ const formatBlockInfo = ({
   type: constants.blockType[contents.type],
   subtype: constants.blockSubType[subtype]
 })
+/* eslint-enable camelcase */
 
 module.exports = {
   getFrontierCount,
@@ -125,5 +150,6 @@ module.exports = {
   getLedger,
   getBlocksInfo,
   formatBlockInfo,
+  formatAccountInfo,
   wait
 }

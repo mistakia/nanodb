@@ -14,7 +14,7 @@ const {
   getLedger,
   getBlocksInfo,
   formatBlockInfo,
-  wait
+  formatAccountInfo
 } = require('../common')
 
 const main = async () => {
@@ -43,24 +43,12 @@ const main = async () => {
 
     const accountInserts = []
     for (const address in accounts) {
-      const {
-        frontier,
-        open_block,
-        representative_block,
-        balance,
-        modified_timestamp,
-        block_count
-      } = accounts[address]
+      const accountInfo = formatAccountInfo(accounts[address])
       const key = nanocurrency.derivePublicKey(address)
       accountInserts.push({
-        frontier,
-        open_block,
-        representative_block,
-        balance,
-        modified_timestamp,
-        block_count,
+        key,
         account: address,
-        key
+        ...accountInfo
       })
     }
     await db('accounts').insert(accountInserts).onConflict().merge()
