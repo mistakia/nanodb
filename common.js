@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const nano = require('nanocurrency')
 const { default: fetch, Request } = require('node-fetch')
 
 const constants = require('./constants')
@@ -103,6 +104,7 @@ const getChain = ({ block, count }) => {
 const formatBlockInfo = ({
   amount,
   balance,
+  block_account,
   height,
   local_timestamp,
   confirmed,
@@ -114,12 +116,12 @@ const formatBlockInfo = ({
   height,
   local_timestamp,
   confirmed: confirmed === 'true',
-  account: contents.account,
+  account: contents.account || block_account,
   previous: contents.previous,
   representative: contents.representative,
-  link: contents.link,
+  link: contents.link || contents.destination || contents.source,
   link_as_account:
-    contents.link_as_account || contents.destination || contents.source,
+    contents.link_as_account || (contents.destination ? nano.deriveAddress(contents.destination) : null),
   signature: contents.signature,
   work: contents.work,
   type: constants.blockType[contents.type],
