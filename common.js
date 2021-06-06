@@ -55,22 +55,11 @@ const getLedger = ({ account, count = 1, threshold = 100000000000000000 }) => {
   return request(options)
 }
 
-const getBlock = async (hash) => {
-  const data = {
-    action: 'blocks_info',
-    json_block: true,
-    source: true,
-    hashes: [hash]
-  }
-  const options = rpcRequest(data)
-  const res = await request(options)
-  return res.blocks[hash]
-}
-
 const getBlocksInfo = ({ hashes }) => {
   const data = {
     action: 'blocks_info',
     include_not_found: true,
+    source: true,
     json_block: true,
     hashes
   }
@@ -109,7 +98,8 @@ const formatBlockInfo = ({
   local_timestamp,
   confirmed,
   contents,
-  subtype
+  subtype,
+  source_account
 }) => ({
   amount,
   balance,
@@ -121,7 +111,7 @@ const formatBlockInfo = ({
   representative: contents.representative,
   link: contents.link || contents.destination || contents.source,
   link_as_account:
-    contents.link_as_account || (contents.destination ? nano.deriveAddress(contents.destination) : null),
+    contents.link_as_account || contents.destination || source_account,
   signature: contents.signature,
   work: contents.work,
   type: constants.blockType[contents.type],
@@ -134,7 +124,6 @@ module.exports = {
   getChain,
   getLedger,
   getBlocksInfo,
-  getBlock,
   formatBlockInfo,
   wait
 }

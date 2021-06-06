@@ -2,7 +2,7 @@ const yargs = require('yargs/yargs')
 const { hideBin } = require('yargs/helpers')
 
 const argv = yargs(hideBin(process.argv)).argv
-const { getBlock, formatBlockInfo } = require('../common')
+const { getBlocksInfo, formatBlockInfo } = require('../common')
 const constants = require('../constants')
 const db = require('../db')
 let index = 0
@@ -22,7 +22,7 @@ const verifyBlock = async (hash) => {
       missing.push(hash)
       return
     }
-    const b = await getBlock(hash)
+    const b = await getBlocksInfo({ hashes: [hash] })
     block = { hash, ...formatBlockInfo(b) }
     await db('blocks').insert(block).onConflict().merge()
   }

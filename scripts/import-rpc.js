@@ -7,8 +7,8 @@ const nanocurrency = require('nanocurrency')
 
 const constants = require('../constants')
 const db = require('../db')
-const logger = debug('script')
-debug.enable('script')
+const logger = debug('rpc')
+debug.enable('rpc')
 const {
   getFrontierCount,
   getLedger,
@@ -33,7 +33,8 @@ const main = async () => {
 
     const { accounts } = await getLedger({
       account,
-      count: batchSize
+      count: batchSize,
+      threshold: argv.threshold
     })
 
     const addresses = Object.keys(accounts)
@@ -82,8 +83,6 @@ const main = async () => {
 
     index += batchSize
     account = addresses[addressCount - 1]
-
-    await wait(3000)
   } while (addressCount === batchSize)
 
   process.exit()
