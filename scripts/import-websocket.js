@@ -28,7 +28,7 @@ let blocksQueue = []
 let queueAccount = constants.BURN_ACCOUNT
 
 queue.on('idle', async () => {
-  logger('idle - searching for accounts to update')
+  logger(`idle - searching for accounts to update starting at: ${queueAccount}`)
   const { accounts } = await getLedger({
     account: queueAccount,
     count: 100,
@@ -37,13 +37,14 @@ queue.on('idle', async () => {
     modified_since: dayjs().subtract(3, 'days').unix()
   })
 
-  if (!accounts) {
+  const addresses = Object.keys(accounts)
+
+  if (!accounts || addresses.length === 1) {
     queueAccount = constants.BURN_ACCOUNT
     await wait(60000)
     return
   }
 
-  const addresses = Object.keys(accounts)
   queueAccount = addresses[addresses.length - 1]
 
   logger(`found ${addresses.length} accounts to process`)
