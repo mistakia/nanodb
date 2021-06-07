@@ -110,6 +110,7 @@ try:
     cnx = mysql.connector.connect(
         user=mysql_config["user"],
         host=mysql_config["host"],
+        password=mysql_config["password"],
         database=mysql_config["database"],
     )
     mysql_cursor = cnx.cursor()

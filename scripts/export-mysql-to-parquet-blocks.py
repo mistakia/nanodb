@@ -38,6 +38,7 @@ mysql_config = config["mysql"]["connection"]
 cnx = mysql.connector.connect(
     user=mysql_config["user"],
     host=mysql_config["host"],
+    password=mysql_config["password"],
     database=mysql_config["database"],
 )
 cursor = cnx.cursor(dictionary=True)
