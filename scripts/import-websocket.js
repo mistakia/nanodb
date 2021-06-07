@@ -52,6 +52,8 @@ queue.on('idle', async () => {
 })
 
 const processFrontiers = async (account) => {
+  logger(`processing account ${account}`)
+
   const accountInfo = await getAccountInfo({ account })
   if (accountInfo.error) return
 
