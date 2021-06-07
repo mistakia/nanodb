@@ -11,6 +11,7 @@ const {
   getLedger,
   formatBlockInfo,
   getChain,
+  debounce,
   wait
 } = require('../common')
 const constants = require('../constants')
@@ -27,7 +28,7 @@ let blocksQueue = []
 
 let queueAccount = constants.BURN_ACCOUNT
 
-queue.on('idle', async () => {
+const searchAccounts = async () => {
   logger(`idle - searching for accounts to update starting at: ${queueAccount}`)
   const { accounts } = await getLedger({
     account: queueAccount,
@@ -38,21 +39,24 @@ queue.on('idle', async () => {
   })
 
   const addresses = Object.keys(accounts)
+  const nextAddress = addresses[addresses.length - 1]
 
-  if (!accounts || addresses.length === 1) {
+  if (!accounts || addresses.length === 1 || nextAddress === queueAccount) {
     queueAccount = constants.BURN_ACCOUNT
     await wait(60000)
     return
   }
 
-  queueAccount = addresses[addresses.length - 1]
+  queueAccount = nextAddress
 
   logger(`found ${addresses.length} accounts to process`)
 
   for (const address of addresses) {
     queue.add(() => processFrontiers(address))
   }
-})
+}
+
+queue.on('idle', debounce(searchAccounts, 60000, true))
 
 const processFrontiers = async (account) => {
   logger(`processing account ${account}`)

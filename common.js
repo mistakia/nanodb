@@ -7,6 +7,22 @@ const config = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, 'config.json'))
 )
 
+const debounce = (callback, wait, immediate = false) => {
+  let timeout = null
+
+  return function () {
+    const callNow = immediate && !timeout
+    const next = () => callback.apply(this, arguments)
+
+    clearTimeout(timeout)
+    timeout = setTimeout(next, wait)
+
+    if (callNow) {
+      next()
+    }
+  }
+}
+
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const POST = (data) => ({
@@ -161,5 +177,6 @@ module.exports = {
   getBlocksInfo,
   formatBlockInfo,
   formatAccountInfo,
-  wait
+  wait,
+  debounce
 }
