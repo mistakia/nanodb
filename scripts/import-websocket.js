@@ -2,14 +2,17 @@ const ReconnectingWebSocket = require('reconnecting-websocket')
 const { default: PQueue } = require('p-queue')
 const WS = require('ws')
 const debug = require('debug')
+const dayjs = require('dayjs')
 const nanocurrency = require('nanocurrency')
 
 const {
   getAccountInfo,
   getBlocksInfo,
+  getLedger,
   formatBlockInfo,
   getChain
 } = require('../common')
+const constants = require('../constants')
 const config = require('../config')
 const db = require('../db')
 
@@ -21,9 +24,31 @@ const queue = new PQueue({ concurrency: 1 })
 let frontiersQueue = {}
 let blocksQueue = []
 
-queue.on('idle', () => {
-  // TODO get accounts by threshold
-  console.log('idle')
+let queueAccount = constants.BURN_ACCOUNT
+
+queue.on('idle', async () => {
+  logger('idle - searching for accounts to update')
+  const { accounts } = await getLedger({
+    account: queueAccount,
+    count: 100,
+    sorting: true,
+    threshold: 0,
+    modified_since: dayjs().subtract(3, 'days').unix()
+  })
+
+  if (!accounts) {
+    queueAccount = constants.BURN_ACCOUNT
+    return
+  }
+
+  const addresses = Object.keys(accounts)
+  queueAccount = addresses[addresses.length - 1]
+
+  logger(`found ${addresses.length} accounts to process`)
+
+  for (const address of addresses) {
+    queue.add(() => processFrontiers(address))
+  }
 })
 
 const processFrontiers = async (account) => {

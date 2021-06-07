@@ -42,7 +42,14 @@ const getFrontierCount = () => {
   return request(options)
 }
 
-const getLedger = ({ account, count = 1, threshold = 100000000000000000 }) => {
+/* eslint-disable camelcase */
+const getLedger = ({
+  account,
+  count = 1,
+  threshold = 100000000000000000,
+  modified_since,
+  sorting
+}) => {
   const data = {
     action: 'ledger',
     pending: true,
@@ -50,11 +57,14 @@ const getLedger = ({ account, count = 1, threshold = 100000000000000000 }) => {
     weight: true,
     account,
     threshold,
-    count
+    count,
+    modified_since,
+    sorting
   }
   const options = rpcRequest(data)
   return request(options)
 }
+/* eslint-enable camelcase */
 
 const getBlocksInfo = ({ hashes }) => {
   const data = {

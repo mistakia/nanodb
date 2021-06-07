@@ -29,13 +29,13 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 #### Read from lmdb to console
 
 ```py
-python3 scripts/read.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
+python3 scripts/read-lmdb.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
 ```
 
 #### Import from lmdb to mysql
 
 ```py
-python3 scripts/import-mysql.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
+python3 scripts/export-lmdb-to-mysql.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
 ```
 
 _Edit `config.json` with mysql information_
@@ -43,7 +43,7 @@ _Edit `config.json` with mysql information_
 #### Import from lmdb to parquet
 
 ```py
-python3 scripts/import-parquet.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
+python3 scripts/export-lmdb-to-parquet.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
 ```
 
 ## Nano IPFS-Log
