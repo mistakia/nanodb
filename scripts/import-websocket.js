@@ -10,7 +10,8 @@ const {
   getBlocksInfo,
   getLedger,
   formatBlockInfo,
-  getChain
+  getChain,
+  wait
 } = require('../common')
 const constants = require('../constants')
 const config = require('../config')
@@ -38,6 +39,7 @@ queue.on('idle', async () => {
 
   if (!accounts) {
     queueAccount = constants.BURN_ACCOUNT
+    await wait(60000)
     return
   }
 

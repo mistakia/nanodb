@@ -20,7 +20,11 @@ CREATE TABLE `accounts` (
   `weight` varchar(39) DEFAULT NULL,
   `pending` varchar(39) DEFAULT NULL,
   `key` char(64) DEFAULT NULL,
-  UNIQUE KEY `account` (`account`)
+  UNIQUE KEY `account` (`account`),
+  INDEX `balance` (`balance`),
+  INDEX `representative` (`representative`),
+  INDEX `pending` (`pending`),
+  INDEX `modified_timestamp` (`modified_timestamp`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
 
 -- --------------------------------------------------------
@@ -47,7 +51,14 @@ CREATE TABLE `blocks` (
   `signature` char(128) NOT NULL,
   `work` char(16) NOT NULL,
   `subtype` tinyint(1) DEFAULT NULL,
-  UNIQUE KEY `block` (`hash`)
+  UNIQUE KEY `block` (`hash`),
+  INDEX `account` (`account`),
+  INDEX `type` (`type`),
+  INDEX `subtype` (`subtype`),
+  INDEX `amount` (`amount`),
+  INDEX `balance` (`balance`),
+  INDEX `representative` (`representative`),
+  INDEX `local_timestamp` (`local_timestamp`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
 
 -- --------------------------------------------------------
