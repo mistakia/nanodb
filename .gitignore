@@ -11,5 +11,4 @@ yarn-error.log
 # App specific
 #
 config.json
-blocks.parquet
-accounts.parquet
+*.parquet

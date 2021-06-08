@@ -1,30 +1,29 @@
 import decimal
+import os
 import json
 import mysql.connector
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-select_accounts = (
-    "SELECT * FROM accounts LIMIT {0} OFFSET {1}"
-)
+select_accounts = "SELECT * FROM accounts LIMIT {0} OFFSET {1}"
 
 fields = [
-    pa.field('account', pa.string()),
-    pa.field('frontier', pa.string()),
-    pa.field('open_block', pa.string()),
-    pa.field('representative_block', pa.string()),
-    pa.field('balance', pa.decimal128(38,0)),
-    pa.field('modified_timestamp', pa.int64()),
-    pa.field('block_count', pa.int64()),
-    pa.field('confirmation_height', pa.int64()),
-    pa.field('confirmation_height_frontier', pa.string()),
-    pa.field('representative', pa.string()),
-    pa.field('weight', pa.decimal128(38,0)),
-    pa.field('pending', pa.decimal128(38,0))
+    pa.field("account", pa.string()),
+    pa.field("frontier", pa.string()),
+    pa.field("open_block", pa.string()),
+    pa.field("representative_block", pa.string()),
+    pa.field("balance", pa.decimal128(38, 0)),
+    pa.field("modified_timestamp", pa.int64()),
+    pa.field("block_count", pa.int64()),
+    pa.field("confirmation_height", pa.int64()),
+    pa.field("confirmation_height_frontier", pa.string()),
+    pa.field("representative", pa.string()),
+    pa.field("weight", pa.decimal128(38, 0)),
+    pa.field("pending", pa.decimal128(38, 0)),
 ]
 schema = pa.schema(fields)
-filepath = 'accounts.parquet'
+filepath = os.path.abspath("../output/accounts.parquet")
 offset = 0
 batch_size = 10000
 
@@ -45,30 +44,26 @@ try:
     t = pq.read_metadata(filepath)
     offset = t.num_rows
 except Exception as ex:
-    print('Unable to read {}'.format(filepath))
+    print("Unable to read {}".format(filepath))
 
 # query mysql
 cursor.execute(select_accounts.format(batch_size, offset))
 result = cursor.fetchall()
 if not len(result):
-    print('No new rows to append')
+    print("No new rows to append")
     cursor.close()
     quit()
 
 pqwriter = pq.ParquetWriter(filepath, schema)
 
-while (len(result)):
-    print('writing {} rows to file'.format(len(result)))
+while len(result):
+    print("writing {} rows to file".format(len(result)))
     # write / append to file
     df_raw = pd.DataFrame(result)
-    df_raw['balance'] = df_raw['balance'].apply(lambda x: decimal.Decimal(x))
-    df_raw['weight'] = df_raw['weight'].apply(lambda x: decimal.Decimal(x))
-    df_raw['pending'] = df_raw['pending'].apply(lambda x: decimal.Decimal(x))
-    table = pa.Table.from_pandas(
-        df_raw,
-        schema=schema,
-        preserve_index=False
-    )
+    df_raw["balance"] = df_raw["balance"].apply(lambda x: decimal.Decimal(x))
+    df_raw["weight"] = df_raw["weight"].apply(lambda x: decimal.Decimal(x))
+    df_raw["pending"] = df_raw["pending"].apply(lambda x: decimal.Decimal(x))
+    table = pa.Table.from_pandas(df_raw, schema=schema, preserve_index=False)
     pqwriter.write_table(table)
 
     # load next batch
@@ -76,5 +71,5 @@ while (len(result)):
     cursor.execute(select_accounts.format(batch_size, offset))
     result = cursor.fetchall()
 
-print('Done')
+print("Done")
 cursor.close()

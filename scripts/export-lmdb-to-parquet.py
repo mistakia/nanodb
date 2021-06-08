@@ -31,9 +31,9 @@ def get_state_block(block):
 
     return {
         "height": block.sideband.height,
-        "local_timestamp": int(datetime.datetime.utcfromtimestamp(
-            block.sideband.timestamp
-        ).strftime("%s")),
+        "local_timestamp": int(
+            datetime.datetime.utcfromtimestamp(block.sideband.timestamp).strftime("%s")
+        ),
         "subtype": subtype,
     }
 
@@ -41,9 +41,9 @@ def get_state_block(block):
 def get_legacy_block(block):
     return {
         "height": getattr(block.sideband, "height", 1),
-        "local_timestamp": int(datetime.datetime.utcfromtimestamp(
-            block.sideband.timestamp
-        ).strftime("%s")),
+        "local_timestamp": int(
+            datetime.datetime.utcfromtimestamp(block.sideband.timestamp).strftime("%s")
+        ),
         "subtype": None,
     }
 
@@ -96,18 +96,18 @@ try:
         data_accounts = []
 
         fields = [
-            pa.field('balance', pa.decimal128(39,0)),
-            pa.field('account', pa.string()),
-            pa.field('frontier', pa.string()),
-            pa.field('open_block', pa.string()),
-            pa.field('representative_block', pa.string()),
-            pa.field('modified_timestamp', pa.int64()),
-            pa.field('block_count', pa.int64()),
-            pa.field('confirmation_height', pa.int64()),
-            pa.field('confirmation_height_frontier', pa.string())
+            pa.field("balance", pa.decimal128(39, 0)),
+            pa.field("account", pa.string()),
+            pa.field("frontier", pa.string()),
+            pa.field("open_block", pa.string()),
+            pa.field("representative_block", pa.string()),
+            pa.field("modified_timestamp", pa.int64()),
+            pa.field("block_count", pa.int64()),
+            pa.field("confirmation_height", pa.int64()),
+            pa.field("confirmation_height_frontier", pa.string()),
         ]
         schema = pa.schema(fields)
-        pqwriter = pq.ParquetWriter('accounts.parquet', schema)
+        pqwriter = pq.ParquetWriter("accounts.parquet", schema)
 
         with env.begin() as txn:
             cursor = txn.cursor(accounts_db)
@@ -167,9 +167,7 @@ try:
 
                 data_account["block_count"] = account_info.block_count
                 data_account["confirmation_height"] = height
-                data_account[
-                    "confirmation_height_frontier"
-                ] = height_frontier
+                data_account["confirmation_height_frontier"] = height_frontier
 
                 data_accounts.append(data_account)
 
@@ -177,9 +175,7 @@ try:
                     df_raw = pd.DataFrame(data_accounts)
                     df_raw = df_raw.astype({"modified_timestamp": int})
                     table = pa.Table.from_pandas(
-                        df_raw,
-                        schema=schema,
-                        preserve_index=False
+                        df_raw, schema=schema, preserve_index=False
                     )
                     pqwriter.write_table(table)
                     data_accounts = []
@@ -189,9 +185,7 @@ try:
                     df_raw = pd.DataFrame(data_accounts)
                     df_raw = df_raw.astype({"modified_timestamp": int})
                     table = pa.Table.from_pandas(
-                        df_raw,
-                        schema=schema,
-                        preserve_index=False
+                        df_raw, schema=schema, preserve_index=False
                     )
                     pqwriter.write_table(table)
                     break
@@ -218,24 +212,24 @@ try:
             data_blocks = []
 
             fields = [
-                pa.field('height', pa.int64()),
-                pa.field('local_timestamp', pa.int64()),
-                pa.field('subtype', pa.int8()),
-                pa.field('type', pa.int8()),
-                pa.field('hash', pa.string()),
-                pa.field('balance', pa.decimal128(39,0)),
-                pa.field('account', pa.string()),
-                pa.field('previous', pa.string()),
-                pa.field('representative', pa.string()),
-                pa.field('link', pa.string()),
-                pa.field('link_as_account', pa.string()),
-                pa.field('signature', pa.string()),
-                pa.field('work', pa.string()),
-                pa.field('amount', pa.decimal128(39,0)),
-                pa.field('confirmed', pa.bool_())
+                pa.field("height", pa.int64()),
+                pa.field("local_timestamp", pa.int64()),
+                pa.field("subtype", pa.int8()),
+                pa.field("type", pa.int8()),
+                pa.field("hash", pa.string()),
+                pa.field("balance", pa.decimal128(39, 0)),
+                pa.field("account", pa.string()),
+                pa.field("previous", pa.string()),
+                pa.field("representative", pa.string()),
+                pa.field("link", pa.string()),
+                pa.field("link_as_account", pa.string()),
+                pa.field("signature", pa.string()),
+                pa.field("work", pa.string()),
+                pa.field("amount", pa.decimal128(39, 0)),
+                pa.field("confirmed", pa.bool_()),
             ]
             schema = pa.schema(fields)
-            pqwriter = pq.ParquetWriter('blocks.parquet', schema)
+            pqwriter = pq.ParquetWriter("blocks.parquet", schema)
 
             for key, value in cursor:
                 keystream = KaitaiStream(io.BytesIO(key))
@@ -378,20 +372,22 @@ try:
                         previous_balance = nanolib.blocks.parse_hex_balance(
                             previous_block.block_value.sideband.balance.hex().upper()
                         )
-                    data_block["amount"] = decimal.Decimal(abs(previous_balance - balance))
+                    data_block["amount"] = decimal.Decimal(
+                        abs(previous_balance - balance)
+                    )
                 else:
                     data_block["amount"] = decimal.Decimal(balance)
 
-                data_block["confirmed"] = True if height >= data_block["height"] else False
+                data_block["confirmed"] = (
+                    True if height >= data_block["height"] else False
+                )
 
                 data_blocks.append(data_block)
 
                 if len(data_blocks) == batch_size:
                     df_raw = pd.DataFrame(data_blocks)
                     table = pa.Table.from_pandas(
-                        df_raw,
-                        schema=schema,
-                        preserve_index=False
+                        df_raw, schema=schema, preserve_index=False
                     )
                     pqwriter.write_table(table)
                     data_blocks = []
@@ -401,9 +397,7 @@ try:
                 if count >= args.count:
                     df_raw = pd.DataFrame(data_blocks)
                     table = pa.Table.from_pandas(
-                        df_raw,
-                        schema=schema,
-                        preserve_index=False
+                        df_raw, schema=schema, preserve_index=False
                     )
                     pqwriter.write_table(table)
                     break

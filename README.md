@@ -1,19 +1,16 @@
 # NanoDB
 
-This project aims to provide up-to-date data pertaining to the [Nano cryptocurrency network](https://github.com/nanocurrency/nano-node) in various popular database formats (mysql, postgres, neo4j, etc) in order to make it more accessible. The secondary purpose is to explore structuring Nano block data on [IPFS](https://github.com/ipfs/go-ipfs) and to support an [IPLD](https://github.com/ipld/specs) implementation for Nano for use in distributed applications.
+This project aims to provide up-to-date data pertaining to the [Nano cryptocurrency network](https://github.com/nanocurrency/nano-node) in various popular formats (sql, parquet, csv) in order to make it more accessible. The secondary purpose is to explore structuring Nano block data on [IPFS](https://github.com/ipfs/go-ipfs) and to support an [IPLD](https://github.com/ipld/specs) implementation for Nano for use in distributed applications.
 
-- [ ] Public API
+- [ ] Public Real-time API
 - [ ] Google Big Query Public Dataset ([Link](https://console.cloud.google.com/bigquery?project=nano-node-310304&page=project))
-- [ ] Import scripts (from lmdb)
+- [ ] Export scripts (from lmdb)
   - [x] Mysql
   - [x] Parquet
-  - [ ] Postgres
-  - [ ] Neo4j
 - [ ] Hosted snapshots
-  - [ ] Mysql
+  - [ ] SQL
   - [ ] Parquet
-  - [ ] Postgres
-  - [ ] Neo4j
+  - [ ] CSV
 - [ ] Nano IPLD Implementation
 - [ ] Nano IPFS-Log Implementation
 - [ ] IPFS Node pinning Nano State Blocks / IPLD blocks
@@ -23,6 +20,9 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 - Transaction Classification
 - Account Labeling / Classification
 - Pruned Snapshots
+  - Snapshot without spam blocks
+  - Exchange blocks only
+  - Faucet distribution
 
 ## Usage
 
@@ -32,7 +32,7 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 python3 scripts/read-lmdb.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
 ```
 
-#### Import from lmdb to mysql
+#### Export from lmdb to mysql
 
 ```py
 python3 scripts/export-lmdb-to-mysql.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
@@ -40,7 +40,7 @@ python3 scripts/export-lmdb-to-mysql.py --filename [path_lmdb.ldb] [--table [all
 
 _Edit `config.json` with mysql information_
 
-#### Import from lmdb to parquet
+#### Export from lmdb to parquet
 
 ```py
 python3 scripts/export-lmdb-to-parquet.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
