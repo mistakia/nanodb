@@ -42,4 +42,4 @@ rm $accounts_sql_file
 tar -zvcf $blocks_gz_file $blocks_sql_file
 rm $blocks_sql_file
 
-rclone sync output drive:
+rclone sync output remote:

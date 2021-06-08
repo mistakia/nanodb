@@ -23,7 +23,7 @@ fields = [
     pa.field("pending", pa.decimal128(38, 0)),
 ]
 schema = pa.schema(fields)
-filepath = os.path.abspath("../output/accounts.parquet")
+filepath = os.path.join(os.path.dirname(__file__), "../output/accounts.parquet")
 offset = 0
 batch_size = 10000
 

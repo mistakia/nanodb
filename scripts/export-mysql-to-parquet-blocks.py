@@ -26,7 +26,7 @@ fields = [
     pa.field("subtype", pa.int8()),
 ]
 schema = pa.schema(fields)
-filepath = os.path.abspath("../output/blocks.parquet")
+filepath = os.path.join(os.path.dirname(__file__), "../output/blocks.parquet")
 offset = 0
 batch_size = 10000
 
