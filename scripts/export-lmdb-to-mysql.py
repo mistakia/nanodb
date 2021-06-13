@@ -17,7 +17,9 @@ import dill as pickle
 
 with open("config.json") as json_data_file:
     config = json.load(json_data_file)
-
+    
+mysql_config = config["mysql"]["connection"]
+    
 add_block = (
     "INSERT INTO blocks "
     "(hash, amount, balance, height, local_timestamp, confirmed,"
@@ -62,7 +64,6 @@ def get_state_block(block):
         "subtype": subtype,
     }
 
-
 def get_legacy_block(block):
     return {
         "height": getattr(block.sideband, "height", 1),
@@ -72,36 +73,6 @@ def get_legacy_block(block):
         "subtype": None,
     }
     
-    
-    
-    
-# Parse arguments
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--filename",
-    type=str,
-    help="Path to the data.ldb file (not directory). If omitted, data.ldb is assumed to be in the current directory",
-)
-parser.add_argument(
-    "--table",
-    type=str,
-    default="all",
-    help="Name of table to dump, or all to dump all tables.",
-)
-parser.add_argument(
-    "--count",
-    type=int,
-    default=math.inf,
-    help="Number of entries to display from the table(s)",
-)
-parser.add_argument(
-    "--key",
-    type=str,
-    help="Start iterating at this exact key. This must be a byte array in hex representation.",
-)
-args = parser.parse_args()
-
-mysql_config = config["mysql"]["connection"]
 
 
 def processAccounts(data_in):
@@ -142,6 +113,34 @@ def processBlocks(data_in):
     conn.commit()        
     conn.close()  
 
+       
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--filename",
+    type=str,
+    help="Path to the data.ldb file (not directory). If omitted, data.ldb is assumed to be in the current directory",
+)
+parser.add_argument(
+    "--table",
+    type=str,
+    default="all",
+    help="Name of table to dump, or all to dump all tables.",
+)
+parser.add_argument(
+    "--count",
+    type=int,
+    default=math.inf,
+    help="Number of entries to display from the table(s)",
+)
+parser.add_argument(
+    "--key",
+    type=str,
+    help="Start iterating at this exact key. This must be a byte array in hex representation.",
+)
+args = parser.parse_args()
+
+
 try:
     # Override database filename
     filename = "data.ldb"
@@ -157,19 +156,16 @@ try:
     if args.table == "all" or args.table == "accounts":
         print("Importing Accounts")
         accounts_db = env.open_db("accounts".encode())
-        confirmation_db = env.open_db("confirmation_height".encode())
-        mem_cache = []
-        
+        confirmation_db = env.open_db("confirmation_height".encode())                
 
         count = 0
         with env.begin() as txn:
             cursor = txn.cursor(accounts_db)
             if args.key:
                 cursor.set_key(bytearray.fromhex(args.key))               
-            
+            mem_cache = []
             tmp = []
             for key, value in cursor:
-                
                 keystream = KaitaiStream(io.BytesIO(key))
                 valstream = KaitaiStream(io.BytesIO(value))
 
@@ -181,7 +177,7 @@ try:
                 )
 
                 print(
-                    "export_count: {}, account {}".format(
+                    "count: {}, account {}".format(
                         count, account_key.account.hex().upper()
                     ),
                     end="\r",
@@ -224,12 +220,7 @@ try:
                 tmp.append(data_account) 
                 count += 1                                               
                 
-                # if count >= args.count:
-                #     mem_cache.append(tmp)
-                #     break
-                # if count % 25000 == 0:                 
-                #     mem_cache.append(tmp)
-                #     tmp = []
+              
                 if count >= args.count:
                     #add the last batch of accounts to mysql
                     mem_cache.append(tmp)
@@ -244,29 +235,27 @@ try:
             
             cursor.close()
         if count == 0:
-            print("(empty)\n")
-        
-        Parallel(n_jobs=num_cores)(delayed(processAccounts)(data_accounts) for data_accounts in mem_cache)      
-            
-           
+            print("(empty)\n") 
+                       
             
        
 
     # blocks table
     if args.table == "all" or args.table == "blocks":
            
-        mem_cache2 = [] 
+        
         print("Importing State Blocks")
         blocks_db = env.open_db("blocks".encode())
         confirmation_db = env.open_db("confirmation_height".encode())
 
-        with env.begin() as txn:
-            tmp = []
+        with env.begin() as txn:            
             cursor = txn.cursor(blocks_db)
             if args.key:
                 cursor.set_key(bytearray.fromhex(args.key))
 
             count = 0
+            mem_cache2 = [] 
+            tmp = []
             for key, value in cursor:
                 keystream = KaitaiStream(io.BytesIO(key))
                 valstream = KaitaiStream(io.BytesIO(value))
