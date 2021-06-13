@@ -150,7 +150,7 @@ try:
     if not os.path.isfile(filename):
         raise Exception("Database doesn't exist")
 
-    env = lmdb.open(filename, subdir=False, max_dbs=100) 
+    env = lmdb.open(filename, subdir=False, readonly=True, lock=False, max_dbs=100) 
     num_cores = multiprocessing.cpu_count()     
 
     # Accounts table
@@ -233,14 +233,14 @@ try:
                 if count >= args.count:
                     #add the last batch of accounts to mysql
                     mem_cache.append(tmp)
-                    Parallel(n_jobs=num_cores)(delayed(processBlocks)(data_accounts) for data_accounts in mem_cache)
+                    Parallel(n_jobs=num_cores)(delayed(processAccounts)(data_accounts) for data_accounts in mem_cache)
                     break
-                if count % 500 == 0:                 
+                if count % 10000 == 0:                 
                     mem_cache.append(tmp)
                     tmp = []
-                if count % 10000 == 0:
-                    Parallel(n_jobs=num_cores)(delayed(processBlocks)(data_accounts) for data_accounts in mem_cache)
-                    mem_cache2 = []
+                if count % 500000 == 0:
+                    Parallel(n_jobs=num_cores)(delayed(processAccounts)(data_accounts) for data_accounts in mem_cache)
+                    mem_cache = []
             
             cursor.close()
         if count == 0:
@@ -391,7 +391,7 @@ try:
                     print(ex)
                     height = 0
 
-                if data_block["height"] > 1:
+                if data_block["height"] > 1:                    
                     previous = txn.get(
                         block.block_value.block.previous, default=None, db=blocks_db
                     )
@@ -427,10 +427,10 @@ try:
                     mem_cache2.append(tmp)
                     Parallel(n_jobs=num_cores)(delayed(processBlocks)(data_blocks) for data_blocks in mem_cache2)
                     break
-                if count % 1000 == 0:                 
+                if count % 10000 == 0:                 
                     mem_cache2.append(tmp)
                     tmp = []
-                if count % 20000 == 0:
+                if count % 500000 == 0:
                     Parallel(n_jobs=num_cores)(delayed(processBlocks)(data_blocks) for data_blocks in mem_cache2)
                     mem_cache2 = []
                
