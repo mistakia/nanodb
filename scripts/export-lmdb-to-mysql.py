@@ -200,22 +200,23 @@ try:
                     height_info.frontier.hex().upper(),
                 )
                 
-                # tmp.append(data_account) 
-                memory_accounts.append(data_account)
+                tmp.append(data_account) 
+                # memory_accounts.append(data_account)
 
                 count += 1                                               
                 
-                if count >= 1000000: #args.count: 
+                if count >= 500000: #args.count:
+                    memory_accounts.append(tmp)
                     break
-                # if count % 10000 == 0:                 
-                    # memory_accounts.append(tmp)
-                    # tmp = []
+                if count % 25000 == 0:                 
+                    memory_accounts.append(tmp)
+                    tmp = []
             
             cursor.close()
         if count == 0:
             print("(empty)\n")
         
-        # Parallel(n_jobs=num_cores)(delayed(processInput)(data_accounts) for data_accounts in memory_accounts)      
+        Parallel(n_jobs=num_cores)(delayed(processInput)(data_accounts) for data_accounts in memory_accounts)      
             
            
             
