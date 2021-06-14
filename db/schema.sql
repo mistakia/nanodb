@@ -16,7 +16,7 @@ CREATE TABLE `accounts` (
   `block_count` int(11) DEFAULT NULL,
   `confirmation_height` int(11) DEFAULT NULL,
   `confirmation_height_frontier` char(64) DEFAULT NULL,
-  `representative` char(65) NOT NULL,
+  `representative` char(65)  NULL,
   `weight` varchar(39) DEFAULT NULL,
   `pending` varchar(39) DEFAULT NULL,
   `key` char(64) DEFAULT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE `accounts` (
   INDEX `representative` (`representative`),
   INDEX `pending` (`pending`),
   INDEX `modified_timestamp` (`modified_timestamp`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=FIXED;
 
 -- --------------------------------------------------------
 
@@ -59,7 +59,7 @@ CREATE TABLE `blocks` (
   INDEX `balance` (`balance`),
   INDEX `representative` (`representative`),
   INDEX `local_timestamp` (`local_timestamp`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=FIXED;
 
 -- --------------------------------------------------------
 

@@ -11,10 +11,15 @@ import math
 from nanodb import Nanodb
 from kaitaistruct import KaitaiStream
 import mysql.connector
+import multiprocessing
+from joblib import Parallel, delayed
+import dill as pickle
 
 with open("config.json") as json_data_file:
     config = json.load(json_data_file)
-
+    
+mysql_config = config["mysql"]["connection"]
+    
 add_block = (
     "INSERT INTO blocks "
     "(hash, amount, balance, height, local_timestamp, confirmed,"
@@ -33,7 +38,7 @@ add_account = (
     "block_count, confirmation_height, confirmation_height_frontier) VALUES (%s, %s, %s, %s,"
     "%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE frontier=frontier, open_block=open_block,"
     "representative_block=representative_block, balance=balance,"
-    "modified_timestamp=modeified_timestamp, block_count=block_count,"
+    "modified_timestamp=modified_timestamp, block_count=block_count,"
     "confirmation_height=confirmation_height,"
     "confirmation_height_frontier=confirmation_height_frontier"
 )
@@ -59,7 +64,6 @@ def get_state_block(block):
         "subtype": subtype,
     }
 
-
 def get_legacy_block(block):
     return {
         "height": getattr(block.sideband, "height", 1),
@@ -68,8 +72,48 @@ def get_legacy_block(block):
         ).strftime("%s"),
         "subtype": None,
     }
+    
 
 
+def processAccounts(data_in):
+    export_counter = 0
+    conn = mysql.connector.connect(
+            user=mysql_config["user"],
+            host=mysql_config["host"],
+            password=mysql_config["password"],
+            database=mysql_config["database"],
+        )
+    conn.autocommit = False
+    mysql_cursor = conn.cursor()  
+    mysql_cursor.execute("SET foreign_key_checks = 0")
+    mysql_cursor.execute("SET unique_checks = 0")  
+    for data_account in data_in:   
+        mysql_cursor.execute(add_account, data_account) 
+        export_counter += 1
+        #print("import_count : [{}]".format(export_counter))
+    conn.commit()        
+    conn.close()
+
+def processBlocks(data_in):
+    export_counter = 0
+    conn = mysql.connector.connect(
+            user=mysql_config["user"],
+            host=mysql_config["host"],
+            password=mysql_config["password"],
+            database=mysql_config["database"],
+        )
+    conn.autocommit = False
+    mysql_cursor = conn.cursor() 
+    mysql_cursor.execute("SET foreign_key_checks = 0")
+    mysql_cursor.execute("SET unique_checks = 0")   
+    for data_blocks in data_in:   
+        mysql_cursor.execute(add_block, data_blocks) 
+        export_counter += 1
+        #print("import_count : [{}]".format(export_counter))
+    conn.commit()        
+    conn.close()  
+
+       
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -96,6 +140,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+
 try:
     # Override database filename
     filename = "data.ldb"
@@ -104,31 +149,23 @@ try:
     if not os.path.isfile(filename):
         raise Exception("Database doesn't exist")
 
-    env = lmdb.open(filename, subdir=False, max_dbs=100)
-
-    mysql_config = config["mysql"]["connection"]
-    cnx = mysql.connector.connect(
-        user=mysql_config["user"],
-        host=mysql_config["host"],
-        password=mysql_config["password"],
-        database=mysql_config["database"],
-    )
-    mysql_cursor = cnx.cursor()
+    env = lmdb.open(filename, subdir=False, readonly=True, lock=False, max_dbs=100) 
+    num_cores = multiprocessing.cpu_count()     
 
     # Accounts table
     if args.table == "all" or args.table == "accounts":
         print("Importing Accounts")
         accounts_db = env.open_db("accounts".encode())
-        confirmation_db = env.open_db("confirmation_height".encode())
+        confirmation_db = env.open_db("confirmation_height".encode())                
 
         count = 0
         with env.begin() as txn:
             cursor = txn.cursor(accounts_db)
             if args.key:
-                cursor.set_key(bytearray.fromhex(args.key))
-
+                cursor.set_key(bytearray.fromhex(args.key))               
+            mem_cache = []
+            tmp = []
             for key, value in cursor:
-
                 keystream = KaitaiStream(io.BytesIO(key))
                 valstream = KaitaiStream(io.BytesIO(value))
 
@@ -179,30 +216,46 @@ try:
                     # #confirmation_height_frontier
                     height_info.frontier.hex().upper(),
                 )
-
-                # mysql_cursor.execute(add_account, data_account)
-                # cnx.commit()
-
-                count += 1
+                
+                tmp.append(data_account) 
+                count += 1                                               
+                
+              
                 if count >= args.count:
+                    #add the last batch of accounts to mysql
+                    mem_cache.append(tmp)
+                    Parallel(n_jobs=num_cores)(delayed(processAccounts)(data_accounts) for data_accounts in mem_cache)
                     break
-
+                if count % 10000 == 0:                 
+                    mem_cache.append(tmp)
+                    tmp = []
+                if count % 500000 == 0:
+                    Parallel(n_jobs=num_cores)(delayed(processAccounts)(data_accounts) for data_accounts in mem_cache)
+                    mem_cache = []
+            
             cursor.close()
         if count == 0:
-            print("(empty)\n")
+            print("(empty)\n") 
+                       
+            
+       
 
     # blocks table
     if args.table == "all" or args.table == "blocks":
+           
+        
         print("Importing State Blocks")
         blocks_db = env.open_db("blocks".encode())
         confirmation_db = env.open_db("confirmation_height".encode())
 
-        with env.begin() as txn:
+        with env.begin() as txn:            
             cursor = txn.cursor(blocks_db)
             if args.key:
                 cursor.set_key(bytearray.fromhex(args.key))
 
             count = 0
+            mem_cache2 = [] 
+            tmp = []
             for key, value in cursor:
                 keystream = KaitaiStream(io.BytesIO(key))
                 valstream = KaitaiStream(io.BytesIO(value))
@@ -327,7 +380,7 @@ try:
                     print(ex)
                     height = 0
 
-                if data_block["height"] > 1:
+                if data_block["height"] > 1:                    
                     previous = txn.get(
                         block.block_value.block.previous, default=None, db=blocks_db
                     )
@@ -355,19 +408,28 @@ try:
                     data_block["amount"] = balance
 
                 data_block["confirmed"] = "1" if height >= data_block["height"] else "0"
-
-                mysql_cursor.execute(add_block, data_block)
-                cnx.commit()
-
-                count += 1
+                                
+                tmp.append(data_block) 
+                count += 1                                               
+                
                 if count >= args.count:
+                    mem_cache2.append(tmp)
+                    Parallel(n_jobs=num_cores)(delayed(processBlocks)(data_blocks) for data_blocks in mem_cache2)
                     break
-            mysql_cursor.close()
+                if count % 10000 == 0:                 
+                    mem_cache2.append(tmp)
+                    tmp = []
+                if count % 500000 == 0:
+                    Parallel(n_jobs=num_cores)(delayed(processBlocks)(data_blocks) for data_blocks in mem_cache2)
+                    mem_cache2 = []
+               
+                    
+                       
             cursor.close()
         if count == 0:
             print("(empty)\n")
 
     env.close()
-    cnx.close()
+    # cnx.close()
 except Exception as ex:
     print(ex)
