@@ -64,6 +64,20 @@ CREATE TABLE `blocks` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `accounts_tags`
+--
+
+DROP TABLE IF EXISTS `accounts_tags`;
+
+CREATE TABLE `accounts_tags` (
+  `account` char(65) NOT NULL,
+  `tag` char(65) NOT NULL,
+  UNIQUE KEY `account` (`account`, `tag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `rollup_daily`
 --
 
