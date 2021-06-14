@@ -11,14 +11,14 @@ CREATE TABLE `accounts` (
   `frontier` char(64) DEFAULT NULL,
   `open_block` char(64) DEFAULT NULL,
   `representative_block` char(64) DEFAULT NULL,
-  `balance` varchar(39) DEFAULT NULL,
+  `balance` decimal(39,0) DEFAULT NULL,
   `modified_timestamp` int(11) DEFAULT NULL,
   `block_count` int(11) DEFAULT NULL,
   `confirmation_height` int(11) DEFAULT NULL,
   `confirmation_height_frontier` char(64) DEFAULT NULL,
   `representative` char(65)  NULL,
-  `weight` varchar(39) DEFAULT NULL,
-  `pending` varchar(39) DEFAULT NULL,
+  `weight` decimal(39,0) DEFAULT NULL,
+  `pending` decimal(39,0) DEFAULT NULL,
   `key` char(64) DEFAULT NULL,
   UNIQUE KEY `account` (`account`),
   INDEX `balance` (`balance`),
@@ -37,8 +37,8 @@ DROP TABLE IF EXISTS `blocks`;
 
 CREATE TABLE `blocks` (
   `hash` char(64) NOT NULL,
-  `amount` varchar(39) DEFAULT NULL,
-  `balance` varchar(39) DEFAULT NULL,
+  `amount` decimal(39,0) DEFAULT NULL,
+  `balance` decimal(39,0) DEFAULT NULL,
   `height` int(11) NOT NULL,
   `local_timestamp` int(11) NOT NULL,
   `confirmed` tinyint(1) NOT NULL,
@@ -64,5 +64,49 @@ CREATE TABLE `blocks` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `votes`
+-- Table structure for table `rollup_daily`
 --
+
+DROP TABLE IF EXISTS `rollup_daily`;
+
+CREATE TABLE `rollup_daily` (
+  `active_addresses` int(11) DEFAULT 0,
+  `blocks` int(11) DEFAULT 0,
+  `send_count` int(11) DEFAULT 0,
+  `open_count` int(11) DEFAULT 0,
+  `receive_count` int(11) DEFAULT 0,
+  `change_count` int(11) DEFAULT 0,
+  `send_volume` decimal(39,0) DEFAULT 0, -- amount of nano sent
+  `change_volume` decimal(39,0) DEFAULT 0, -- amount of voting weight shifted
+
+  `_1000000_count` int(11) DEFAULT 0,
+  `_100000_count` int(11) DEFAULT 0,
+  `_10000_count` int(11) DEFAULT 0,
+  `_1000_count` int(11) DEFAULT 0,
+  `_100_count` int(11) DEFAULT 0,
+  `_10_count` int(11) DEFAULT 0,
+  `_1_count` int(11) DEFAULT 0,
+  `_01_count` int(11) DEFAULT 0,
+  `_001_count` int(11) DEFAULT 0,
+  `_0001_count` int(11) DEFAULT 0,
+  `_00001_count` int(11) DEFAULT 0,
+  `_000001_count` int(11) DEFAULT 0,
+  `_000001_below_count` int(11) DEFAULT 0,
+
+  `_1000000_total` decimal(39,0) DEFAULT 0,
+  `_100000_total` decimal(39,0) DEFAULT 0,
+  `_10000_total` decimal(39,0) DEFAULT 0,
+  `_1000_total` decimal(39,0) DEFAULT 0,
+  `_100_total` decimal(39,0) DEFAULT 0,
+  `_10_total` decimal(39,0) DEFAULT 0,
+  `_1_total` decimal(39,0) DEFAULT 0,
+  `_01_total` decimal(39,0) DEFAULT 0,
+  `_001_total` decimal(39,0) DEFAULT 0,
+  `_0001_total` decimal(39,0) DEFAULT 0,
+  `_00001_total` decimal(39,0) DEFAULT 0,
+  `_000001_total` decimal(39,0) DEFAULT 0,
+  `_000001_below_total` decimal(39,0) DEFAULT 0,
+
+  `timestamp` int(11) DEFAULT NULL,
+  UNIQUE KEY `timestamp` (`timestamp`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
