@@ -2,12 +2,15 @@ const debug = require('debug')
 const dayjs = require('dayjs')
 const BigNumber = require('bignumber.js')
 const utc = require('dayjs/plugin/utc')
+const yargs = require('yargs/yargs')
+const { hideBin } = require('yargs/helpers')
 
 const constants = require('../constants')
 const db = require('../db')
 
 dayjs.extend(utc)
 
+const argv = yargs(hideBin(process.argv)).argv
 const logger = debug('calculate:blocks-per-day')
 debug.enable('calculate:blocks-per-day')
 
@@ -35,12 +38,13 @@ for (const [key, value] of amounts) {
 const main = async () => {
   const inserts = []
   let time = dayjs().utc().startOf('day')
-  const end = time.subtract('4', 'day')
+  const end = argv.full ? dayjs('1550832660', 'X') : time.subtract('1', 'day')
 
   do {
     const blocks = await db('blocks')
       .where('local_timestamp', '>=', time.unix())
       .where('local_timestamp', '<', time.add('1', 'day').unix())
+      .whereNot('local_timestamp', 0)
 
     let sendVolume = BigNumber(0)
     let changeVolume = BigNumber(0)
@@ -140,7 +144,7 @@ const main = async () => {
 
     inserts.push(insert)
 
-    logger(`processed ${time.format('DD/MM/YYYY')}`)
+    logger(`processed ${time.format('MM/DD/YYYY')}`)
 
     time = time.subtract('1', 'day')
   } while (time.isAfter(end))

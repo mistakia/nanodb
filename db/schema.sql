@@ -25,7 +25,7 @@ CREATE TABLE `accounts` (
   INDEX `representative` (`representative`),
   INDEX `pending` (`pending`),
   INDEX `modified_timestamp` (`modified_timestamp`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=FIXED;
+) ENGINE=InnoDB ROW_FORMAT=FIXED;
 
 -- --------------------------------------------------------
 
@@ -59,7 +59,7 @@ CREATE TABLE `blocks` (
   INDEX `balance` (`balance`),
   INDEX `representative` (`representative`),
   INDEX `local_timestamp` (`local_timestamp`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=FIXED;
+) ENGINE=InnoDB ROW_FORMAT=FIXED;
 
 -- --------------------------------------------------------
 
@@ -73,7 +73,7 @@ CREATE TABLE `accounts_tags` (
   `account` char(65) NOT NULL,
   `tag` char(65) NOT NULL,
   UNIQUE KEY `account` (`account`, `tag`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB;
 
 -- --------------------------------------------------------
 
@@ -122,5 +122,5 @@ CREATE TABLE `rollup_daily` (
   `_000001_below_total` decimal(39,0) DEFAULT 0,
 
   `timestamp` int(11) DEFAULT NULL,
-  UNIQUE KEY `timestamp` (`timestamp`),
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED;
+  UNIQUE KEY `timestamp` (`timestamp`)
+) ENGINE=InnoDB;
