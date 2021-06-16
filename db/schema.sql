@@ -138,5 +138,9 @@ CREATE TABLE `votes` (
   `hash` char(64) NOT NULL,
   `vote_timestamp` bigint unsigned NOT NULL,
   `local_timestamp` int(11) NOT NULL,
-  UNIQUE KEY `vote` (`account`, `hash`, `vote_timestamp`)
+  UNIQUE KEY `vote` (`account`, `hash`, `vote_timestamp`),
+  INDEX `hash` (`hash`),
+  INDEX `account` (`account`),
+  INDEX `vote_timestamp` (`vote_timestamp`),
+  INDEX `local_timestamp` (`local_timestamp`)
 ) ENGINE=InnoDB;
