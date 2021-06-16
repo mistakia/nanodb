@@ -54,4 +54,4 @@ CREATE INDEX blocks_amount ON blocks USING btree(amount);
 CREATE INDEX blocks_balance ON blocks USING btree(balance);
 CREATE INDEX blocks_representative ON blocks USING btree(representative);
 CREATE INDEX blocks_local_timestamp ON blocks USING btree(local_timestamp);
-ALTER TABLE blocks ADD PRIMARY KEY (block);
+ALTER TABLE blocks ADD PRIMARY KEY (hash);
