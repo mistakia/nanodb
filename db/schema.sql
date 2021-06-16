@@ -25,7 +25,7 @@ CREATE TABLE `accounts` (
   INDEX `representative` (`representative`),
   INDEX `pending` (`pending`),
   INDEX `modified_timestamp` (`modified_timestamp`)
-) ENGINE=InnoDB ROW_FORMAT=FIXED;
+) ENGINE=InnoDB;
 
 -- --------------------------------------------------------
 
@@ -59,7 +59,7 @@ CREATE TABLE `blocks` (
   INDEX `balance` (`balance`),
   INDEX `representative` (`representative`),
   INDEX `local_timestamp` (`local_timestamp`)
-) ENGINE=InnoDB ROW_FORMAT=FIXED;
+) ENGINE=InnoDB;
 
 -- --------------------------------------------------------
 
