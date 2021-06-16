@@ -124,6 +124,7 @@ const main = async () => {
     }
 
     const insert = {
+      timestamp: time.unix(),
       active_addresses: Object.keys(addresses).length,
       blocks: blocks.length,
       send_volume: sendVolume.toFixed(),
