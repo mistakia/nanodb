@@ -428,10 +428,10 @@ try:
 
             cursor.close()
             mem_cache2.append(tmp)
-                  Parallel(n_jobs=num_cores)(
-                      delayed(processBlocks)(data_blocks)
-                      for data_blocks in mem_cache2
-                  )
+            Parallel(n_jobs=num_cores)(
+                delayed(processBlocks)(data_blocks)
+                for data_blocks in mem_cache2
+            )
         if count == 0:
             print("(empty)\n")
 
