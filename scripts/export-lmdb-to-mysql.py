@@ -221,7 +221,7 @@ try:
                 tmp.append(data_account)
                 count += 1
 
-                if count >= args.count:                    
+                if count >= args.count:
                     break
                 if count % 10000 == 0:
                     mem_cache.append(tmp)
@@ -237,8 +237,7 @@ try:
             # add the last batch of accounts to mysql
             mem_cache.append(tmp)
             Parallel(n_jobs=num_cores)(
-                delayed(processAccounts)(data_accounts)
-                for data_accounts in mem_cache
+                delayed(processAccounts)(data_accounts) for data_accounts in mem_cache
             )
         if count == 0:
             print("(empty)\n")
@@ -414,7 +413,7 @@ try:
                 tmp.append(data_block)
                 count += 1
 
-                if count >= args.count:                   
+                if count >= args.count:
                     break
                 if count % 10000 == 0:
                     mem_cache2.append(tmp)
@@ -429,8 +428,7 @@ try:
             cursor.close()
             mem_cache2.append(tmp)
             Parallel(n_jobs=num_cores)(
-                delayed(processBlocks)(data_blocks)
-                for data_blocks in mem_cache2
+                delayed(processBlocks)(data_blocks) for data_blocks in mem_cache2
             )
         if count == 0:
             print("(empty)\n")

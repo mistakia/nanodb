@@ -14,14 +14,14 @@
       "max": 10
     }
   },
-  "postgresql":{
-	"client": "postgresql",
+  "postgresql": {
+    "client": "postgresql",
     "connection": {
       "host": "localhost",
       "user": "root",
       "password": "xxxxx",
       "dbname": "nanodb_development",
-	    "port":"5432"
-    } 
+      "port": "5432"
+    }
   }
 }

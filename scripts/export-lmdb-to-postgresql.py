@@ -17,16 +17,16 @@ import dill as pickle
 
 with open("config.json") as json_data_file:
     config = json.load(json_data_file)
-    
+
 postgresql_config = config["postgresql"]["connection"]
 
-blocks_disable_index = ("UPDATE pg_index SET indisready=false WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='blocks');")
-blocks_enable_index = ("UPDATE pg_index SET indisready=true WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='blocks'); REINDEX TABLE blocks ;")
+blocks_disable_index = "UPDATE pg_index SET indisready=false WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='blocks');"
+blocks_enable_index = "UPDATE pg_index SET indisready=true WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='blocks'); REINDEX TABLE blocks ;"
 
-accounts_disable_index = ("UPDATE pg_index SET indisready=false WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='accounts'); ")
-accounts_enable_index = ("UPDATE pg_index SET indisready=true WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='accounts'); REINDEX TABLE accounts ;")
-    
-    
+accounts_disable_index = "UPDATE pg_index SET indisready=false WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='accounts'); "
+accounts_enable_index = "UPDATE pg_index SET indisready=true WHERE indrelid = (SELECT oid FROM pg_class WHERE relname='accounts'); REINDEX TABLE accounts ;"
+
+
 add_block = (
     "INSERT INTO blocks "
     "(hash, amount, balance, height, local_timestamp, confirmed,"
@@ -36,21 +36,21 @@ add_block = (
     "%(representative)s, %(link)s, %(link_as_account)s, %(signature)s, %(work)s,"
     "%(subtype)s)"
     "ON CONFLICT (hash) DO UPDATE SET amount=excluded.amount, balance=excluded.balance, height=excluded.height,"
-     "account=excluded.account, previous=excluded.previous, representative=excluded.representative, link=excluded.link,"
-     "link_as_account=excluded.link_as_account, signature=excluded.signature, work=excluded.work, subtype=excluded.subtype"
- )
+    "account=excluded.account, previous=excluded.previous, representative=excluded.representative, link=excluded.link,"
+    "link_as_account=excluded.link_as_account, signature=excluded.signature, work=excluded.work, subtype=excluded.subtype"
+)
 
 add_account = (
     "INSERT INTO accounts "
     "(account, frontier, open_block, representative_block, balance, modified_timestamp,"
     "block_count, confirmation_height, confirmation_height_frontier) VALUES (%s, %s, %s, %s,"
-    "%s, %s, %s, %s, %s) " 
+    "%s, %s, %s, %s, %s) "
     "ON CONFLICT (account) DO UPDATE SET frontier=excluded.frontier, open_block=excluded.open_block,"
-     "representative_block=excluded.representative_block, balance=excluded.balance,"
-     "modified_timestamp=excluded.modified_timestamp, block_count=excluded.block_count,"
-     "confirmation_height=excluded.confirmation_height,"
-     "confirmation_height_frontier=excluded.confirmation_height_frontier"
- )
+    "representative_block=excluded.representative_block, balance=excluded.balance,"
+    "modified_timestamp=excluded.modified_timestamp, block_count=excluded.block_count,"
+    "confirmation_height=excluded.confirmation_height,"
+    "confirmation_height_frontier=excluded.confirmation_height_frontier"
+)
 
 
 def get_state_block(block):
@@ -73,6 +73,7 @@ def get_state_block(block):
         "subtype": subtype,
     }
 
+
 def get_legacy_block(block):
     return {
         "height": getattr(block.sideband, "height", 1),
@@ -81,49 +82,84 @@ def get_legacy_block(block):
         ).strftime("%s"),
         "subtype": None,
     }
-    
+
+
 def disableIndex():
-    conn = psycopg2.connect("host={} port={} dbname={} user={} password={}".format(postgresql_config["host"],postgresql_config["port"],postgresql_config["dbname"],postgresql_config["user"],postgresql_config["password"]))
-    postgresql_cursor = conn.cursor()  
-    postgresql_cursor.execute(blocks_disable_index) 
-    postgresql_cursor.execute(accounts_disable_index) 
-    
-    
+    conn = psycopg2.connect(
+        "host={} port={} dbname={} user={} password={}".format(
+            postgresql_config["host"],
+            postgresql_config["port"],
+            postgresql_config["dbname"],
+            postgresql_config["user"],
+            postgresql_config["password"],
+        )
+    )
+    postgresql_cursor = conn.cursor()
+    postgresql_cursor.execute(blocks_disable_index)
+    postgresql_cursor.execute(accounts_disable_index)
+
+
 def enableIndex():
-    conn = psycopg2.connect("host={} port={} dbname={} user={} password={}".format(postgresql_config["host"],postgresql_config["port"],postgresql_config["dbname"],postgresql_config["user"],postgresql_config["password"]))
-    postgresql_cursor = conn.cursor()  
-    postgresql_cursor.execute(blocks_enable_index) 
-    postgresql_cursor.execute(accounts_enable_index) 
-    
+    conn = psycopg2.connect(
+        "host={} port={} dbname={} user={} password={}".format(
+            postgresql_config["host"],
+            postgresql_config["port"],
+            postgresql_config["dbname"],
+            postgresql_config["user"],
+            postgresql_config["password"],
+        )
+    )
+    postgresql_cursor = conn.cursor()
+    postgresql_cursor.execute(blocks_enable_index)
+    postgresql_cursor.execute(accounts_enable_index)
+
+
 def processAccounts(data_in):
     # export_counter = 0
-    conn = psycopg2.connect("host={} port={} dbname={} user={} password={}".format(postgresql_config["host"],postgresql_config["port"],postgresql_config["dbname"],postgresql_config["user"],postgresql_config["password"]))
+    conn = psycopg2.connect(
+        "host={} port={} dbname={} user={} password={}".format(
+            postgresql_config["host"],
+            postgresql_config["port"],
+            postgresql_config["dbname"],
+            postgresql_config["user"],
+            postgresql_config["password"],
+        )
+    )
     conn.set_session(autocommit=False)
-    postgresql_cursor = conn.cursor()  
+    postgresql_cursor = conn.cursor()
     # postgresql_cursor.execute("SET foreign_key_checks = 0")
-    # postgresql_cursor.execute("SET unique_checks = 0")  
-    for data_account in data_in:   
-        postgresql_cursor.execute(add_account, data_account) 
+    # postgresql_cursor.execute("SET unique_checks = 0")
+    for data_account in data_in:
+        postgresql_cursor.execute(add_account, data_account)
         # export_counter += 1
-        #print("import_count : [{}]".format(export_counter))
-    conn.commit()        
+        # print("import_count : [{}]".format(export_counter))
+    conn.commit()
     conn.close()
 
-def processBlocks(data_in):
-    #export_counter = 0
-    conn = psycopg2.connect("host={} port={} dbname={} user={} password={}".format(postgresql_config["host"],postgresql_config["port"],postgresql_config["dbname"],postgresql_config["user"],postgresql_config["password"]))
-    conn.set_session(autocommit=False)
-    postgresql_cursor = conn.cursor() 
-    #postgresql_cursor.execute("SET foreign_key_checks = 0")
-    #postgresql_cursor.execute("SET unique_checks = 0")   
-    for data_blocks in data_in:   
-        postgresql_cursor.execute(add_block, data_blocks) 
-        #export_counter += 1
-        #print("import_count : [{}]".format(export_counter))
-    conn.commit()        
-    conn.close()  
 
-       
+def processBlocks(data_in):
+    # export_counter = 0
+    conn = psycopg2.connect(
+        "host={} port={} dbname={} user={} password={}".format(
+            postgresql_config["host"],
+            postgresql_config["port"],
+            postgresql_config["dbname"],
+            postgresql_config["user"],
+            postgresql_config["password"],
+        )
+    )
+    conn.set_session(autocommit=False)
+    postgresql_cursor = conn.cursor()
+    # postgresql_cursor.execute("SET foreign_key_checks = 0")
+    # postgresql_cursor.execute("SET unique_checks = 0")
+    for data_blocks in data_in:
+        postgresql_cursor.execute(add_block, data_blocks)
+        # export_counter += 1
+        # print("import_count : [{}]".format(export_counter))
+    conn.commit()
+    conn.close()
+
+
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -159,25 +195,25 @@ try:
     if not os.path.isfile(filename):
         raise Exception("Database doesn't exist")
 
-    env = lmdb.open(filename, subdir=False, readonly=True, lock=False, max_dbs=100 )
-    num_cores = multiprocessing.cpu_count()     
+    env = lmdb.open(filename, subdir=False, readonly=True, lock=False, max_dbs=100)
+    num_cores = multiprocessing.cpu_count()
     print("Disable Indexes for faster inserts")
     disableIndex()
-    
+
     # Accounts table
     if args.table == "all" or args.table == "accounts":
         print("Importing Accounts")
         accounts_db = env.open_db("accounts".encode())
-        confirmation_db = env.open_db("confirmation_height".encode())                
+        confirmation_db = env.open_db("confirmation_height".encode())
         error_count = 0
         count = 0
         with env.begin() as txn:
             cursor = txn.cursor(accounts_db)
             if args.key:
-                cursor.set_key(bytearray.fromhex(args.key))               
+                cursor.set_key(bytearray.fromhex(args.key))
             mem_cache = []
             tmp = []
-            
+
             for key, value in cursor:
                 try:
                     keystream = KaitaiStream(io.BytesIO(key))
@@ -190,12 +226,12 @@ try:
                         account_info.balance.hex().upper()
                     )
 
-                    
-
                     confirmation_value = txn.get(
                         account_key.account, default=None, db=confirmation_db
                     )
-                    confirmation_valstream = KaitaiStream(io.BytesIO(confirmation_value))
+                    confirmation_valstream = KaitaiStream(
+                        io.BytesIO(confirmation_value)
+                    )
                     height_info = Nanodb.ConfirmationHeightValue(
                         confirmation_valstream, None, Nanodb(None)
                     )
@@ -215,9 +251,9 @@ try:
                         # balance
                         balance,
                         # #modified_timestamp
-                        datetime.datetime.utcfromtimestamp(account_info.modified).strftime(
-                            "%s"
-                        ),
+                        datetime.datetime.utcfromtimestamp(
+                            account_info.modified
+                        ).strftime("%s"),
                         # #block_count
                         account_info.block_count,
                         # #confirmation_height
@@ -225,56 +261,61 @@ try:
                         # #confirmation_height_frontier
                         height_info.frontier.hex().upper(),
                     )
-                    
-                    tmp.append(data_account)                     
+
+                    tmp.append(data_account)
                 except Exception as ex:
-                    print(ex)   
-                    error_count += 1 
+                    print(ex)
+                    error_count += 1
                 print(
-                        "count: {} acocunts ".format(
-                            count#, account_key.account.hex().upper()
-                        ),
-                        end="\r",
-                    )
-                count += 1    
-              
-                if count >= args.count:                                      
+                    "count: {} acocunts ".format(
+                        count  # , account_key.account.hex().upper()
+                    ),
+                    end="\r",
+                )
+                count += 1
+
+                if count >= args.count:
                     break
-                if count % 10000 == 0:                 
+                if count % 10000 == 0:
                     mem_cache.append(tmp)
                     tmp = []
                 if count % 500000 == 0:
-                    Parallel(n_jobs=num_cores)(delayed(processAccounts)(data_accounts) for data_accounts in mem_cache)
-                    mem_cache = []            
+                    Parallel(n_jobs=num_cores)(
+                        delayed(processAccounts)(data_accounts)
+                        for data_accounts in mem_cache
+                    )
+                    mem_cache = []
             cursor.close()
-            
-            #add the last batch of accounts to mysql  
+
+            # add the last batch of accounts to mysql
             mem_cache.append(tmp)
-            Parallel(n_jobs=num_cores)(delayed(processAccounts)(data_accounts) for data_accounts in mem_cache)
-            print("exported: [{}] with [{}] error(s), last mysql batch size: [{}]".format(count, error_count, sum(len(x) for x in mem_cache)))
+            Parallel(n_jobs=num_cores)(
+                delayed(processAccounts)(data_accounts) for data_accounts in mem_cache
+            )
+            print(
+                "exported: [{}] with [{}] error(s), last mysql batch size: [{}]".format(
+                    count, error_count, sum(len(x) for x in mem_cache)
+                )
+            )
 
         if count == 0:
-            print("(empty)\n") 
-            
-        
-        
+            print("(empty)\n")
 
     # blocks table
     if args.table == "all" or args.table == "blocks":
-           
-        
+
         print("Importing State Blocks")
         blocks_db = env.open_db("blocks".encode())
         confirmation_db = env.open_db("confirmation_height".encode())
 
-        with env.begin() as txn:        
+        with env.begin() as txn:
             cursor = txn.cursor(blocks_db)
             if args.key:
                 cursor.set_key(bytearray.fromhex(args.key))
 
             count = 0
             error_count = 0
-            mem_cache = [] 
+            mem_cache = []
             tmp = []
             for key, value in cursor:
                 try:
@@ -287,7 +328,7 @@ try:
                     except Exception as ex:
                         print(ex)
                         continue
-                    
+
                     btype = block.block_type
 
                     if btype == Nanodb.EnumBlocktype.change:
@@ -369,7 +410,9 @@ try:
                             public_key=block.block_value.block.destination.hex(),
                         )
                     elif btype == Nanodb.EnumBlocktype.receive:
-                        data_block["link"] = block.block_value.block.source.hex().upper()
+                        data_block[
+                            "link"
+                        ] = block.block_value.block.source.hex().upper()
                         data_block["link_as_account"] = None
                         # TODO - use source has to get account
                     else:
@@ -396,7 +439,7 @@ try:
                         print(ex)
                         height = 0
 
-                    if data_block["height"] > 1:                    
+                    if data_block["height"] > 1:
                         previous = txn.get(
                             block.block_value.block.previous, default=None, db=blocks_db
                         )
@@ -423,40 +466,51 @@ try:
                     else:
                         data_block["amount"] = balance
 
-                    data_block["confirmed"] = "1" if height >= data_block["height"] else "0"
-                                    
-                    tmp.append(data_block)                      
+                    data_block["confirmed"] = (
+                        "1" if height >= data_block["height"] else "0"
+                    )
+
+                    tmp.append(data_block)
                 except Exception as ex:
                     print(ex)
                     error_count += 1
                 print(
-                        "count: {} hashes".format(count#, block_key.hash.hex().upper()),
-                        ),end="\r",
-                    )
-                
-                count += 1  
-                if count >= args.count:                    
+                    "count: {} hashes".format(
+                        count  # , block_key.hash.hex().upper()),
+                    ),
+                    end="\r",
+                )
+
+                count += 1
+                if count >= args.count:
                     break
-                if count % 10000 == 0:                 
+                if count % 10000 == 0:
                     mem_cache.append(tmp)
                     tmp = []
                 if count % 500000 == 0:
-                    Parallel(n_jobs=num_cores)(delayed(processBlocks)(data_blocks) for data_blocks in mem_cache)
-                    mem_cache = []              
-                    
-                      
+                    Parallel(n_jobs=num_cores)(
+                        delayed(processBlocks)(data_blocks) for data_blocks in mem_cache
+                    )
+                    mem_cache = []
+
             cursor.close()
             mem_cache.append(tmp)
-            Parallel(n_jobs=num_cores)(delayed(processBlocks)(data_blocks) for data_blocks in mem_cache)
-            print("exported: [{}] with [{}] error(s), last mysql batch size: [{}]".format(count, error_count, sum(len(x) for x in mem_cache)))
-            
+            Parallel(n_jobs=num_cores)(
+                delayed(processBlocks)(data_blocks) for data_blocks in mem_cache
+            )
+            print(
+                "exported: [{}] with [{}] error(s), last mysql batch size: [{}]".format(
+                    count, error_count, sum(len(x) for x in mem_cache)
+                )
+            )
+
         if count == 0:
             print("(empty)\n")
 
     env.close()
     print("Re-Enable Indexes")
     enableIndex()
-    
+
     # cnx.close()
 except Exception as ex:
     print(ex)
