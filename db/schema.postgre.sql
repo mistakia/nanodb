@@ -5,13 +5,13 @@ CREATE TABLE accounts (
     frontier character varying(64) DEFAULT NULL::character varying,
     open_block character varying(64) DEFAULT NULL::character varying,
     representative_block character varying(64) DEFAULT NULL::character varying,
-    balance character varying(39) DEFAULT NULL::character varying,
+    balance numeric(39) DEFAULT NULL::numeric,
     modified_timestamp integer DEFAULT NULL::integer,
     block_count integer DEFAULT NULL::integer,
     confirmation_height integer DEFAULT NULL::integer,
     confirmation_height_frontier character varying(64) DEFAULT NULL::character varying,
     representative character varying(65) DEFAULT NULL::character varying,
-    weight character varying(39) DEFAULT NULL::character varying,
+    weight numeric(39) DEFAULT NULL::numeric ,
     pending character varying(39) DEFAULT NULL::character varying,
     key character varying(64) DEFAULT NULL::character varying
 );
@@ -31,8 +31,8 @@ ALTER TABLE accounts ADD PRIMARY KEY (account);
 DROP TABLE blocks;
 CREATE TABLE blocks (
     hash character varying(65) DEFAULT NULL::character varying,
-    amount character varying(39) DEFAULT NULL::character varying,
-    balance character varying(39) DEFAULT NULL::character varying,
+    amount numeric(39) DEFAULT NULL::numeric,
+    balance numeric(39) DEFAULT NULL::numeric,
     height integer DEFAULT NULL::integer,
     local_timestamp integer  DEFAULT NULL::integer ,
     confirmed integer DEFAULT NULL::integer,
