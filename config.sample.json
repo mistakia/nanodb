@@ -1,4 +1,17 @@
 {
+  "port": 8080,
+
+  "jwt": {
+    "secret": "xxx",
+    "algorithms": ["HS256"],
+    "credentailsRequired": false
+  },
+
+  "ssl": false,
+  "key": "",
+  "cert": "",
+  "url": "",
+
   "websocketAddress": "",
   "rpcAddress": "",
   "mysql": {
