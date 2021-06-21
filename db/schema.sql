@@ -25,7 +25,7 @@ CREATE TABLE `accounts` (
   INDEX `representative` (`representative`),
   INDEX `pending` (`pending`),
   INDEX `modified_timestamp` (`modified_timestamp`)
-) ENGINE=InnoDB ROW_FORMAT=FIXED;
+) ENGINE=InnoDB;
 
 -- --------------------------------------------------------
 
@@ -59,7 +59,7 @@ CREATE TABLE `blocks` (
   INDEX `balance` (`balance`),
   INDEX `representative` (`representative`),
   INDEX `local_timestamp` (`local_timestamp`)
-) ENGINE=InnoDB ROW_FORMAT=FIXED;
+) ENGINE=InnoDB;
 
 -- --------------------------------------------------------
 
@@ -123,4 +123,24 @@ CREATE TABLE `rollup_daily` (
 
   `timestamp` int(11) DEFAULT NULL,
   UNIQUE KEY `timestamp` (`timestamp`)
+) ENGINE=InnoDB;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `votes`
+--
+
+DROP TABLE IF EXISTS `votes`;
+
+CREATE TABLE `votes` (
+  `account` char(65) NOT NULL,
+  `hash` char(64) NOT NULL,
+  `vote_timestamp` bigint unsigned NOT NULL,
+  `local_timestamp` int(11) NOT NULL,
+  UNIQUE KEY `vote` (`account`, `hash`, `vote_timestamp`),
+  INDEX `hash` (`hash`),
+  INDEX `account` (`account`),
+  INDEX `vote_timestamp` (`vote_timestamp`),
+  INDEX `local_timestamp` (`local_timestamp`)
 ) ENGINE=InnoDB;
