@@ -36,7 +36,6 @@ for (const [key, value] of amounts) {
 }
 
 const main = async () => {
-  const inserts = []
   let time = dayjs().utc().startOf('day')
   const end = argv.full ? dayjs('1550832660', 'X') : time.subtract('1', 'day')
 
@@ -143,14 +142,12 @@ const main = async () => {
       insert[`${key}_total`] = amountRangeTotals[i].toFixed()
     }
 
-    inserts.push(insert)
+    await db('rollup_daily').insert(insert).onConflict().merge()
 
     logger(`processed ${time.format('MM/DD/YYYY')}`)
 
     time = time.subtract('1', 'day')
   } while (time.isAfter(end))
-
-  await db('rollup_daily').insert(inserts).onConflict().merge()
 }
 
 module.exprots = main

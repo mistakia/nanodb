@@ -63,6 +63,9 @@ const main = async () => {
   let addressCount = 0
   let account = constants.BURN_ACCOUNT
 
+  await db.raw('SET foreign_key_checks = 0;')
+  await db.raw('SET unique_checks = 0;')
+
   do {
     logger(
       `Fetching accounts from ${index} to ${index + batchSize} (${account})`

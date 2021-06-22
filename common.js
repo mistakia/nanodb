@@ -127,7 +127,9 @@ const formatAccountInfo = ({
   block_count,
   representative,
   weight,
-  pending
+  pending,
+  confirmation_height,
+  confirmation_height_frontier
 }) => ({
   frontier,
   open_block,
@@ -137,7 +139,9 @@ const formatAccountInfo = ({
   block_count,
   representative,
   weight,
-  pending
+  pending,
+  confirmation_height,
+  confirmation_height_frontier
 })
 
 const formatBlockInfo = ({

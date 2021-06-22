@@ -4,9 +4,10 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 
 - [ ] Public Real-time API
 - [ ] Google Big Query Public Dataset ([Link](https://console.cloud.google.com/bigquery?project=nano-node-310304&page=project))
-- [ ] Export scripts (from lmdb)
+- [x] Export scripts (from lmdb)
   - [x] Mysql
   - [x] Parquet
+  - [x] Postgres
 - [ ] Hosted snapshots
   - [ ] SQL
   - [ ] Parquet
@@ -29,21 +30,29 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
 #### Read from lmdb to console
 
 ```py
-python3 scripts/read-lmdb.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
+python3 scripts/read-lmdb.py --filename [path_lmdb.ldb] [--table] [--count]
 ```
 
 #### Export from lmdb to mysql
 
 ```py
-python3 scripts/export-lmdb-to-mysql.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
+python3 scripts/export-lmdb-to-mysql.py --filename [path_lmdb.ldb] [--table] [--count]
 ```
 
 _Edit `config.json` with mysql information_
 
+#### Export from lmdb to postgres
+
+```py
+python3 scripts/export-lmdb-to-postgres.py --filename [path_lmdb.ldb] [--table] [--count]
+```
+
+_Edit `config.json` with postgres information_
+
 #### Export from lmdb to parquet
 
 ```py
-python3 scripts/export-lmdb-to-parquet.py --filename [path_lmdb.ldb] [--table [all | table_name] ] [--count [10] ]
+python3 scripts/export-lmdb-to-parquet.py --filename [path_lmdb.ldb] [--table] [--count]
 ```
 
 ## Nano IPFS-Log
