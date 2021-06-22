@@ -103,16 +103,9 @@ g = Graph("bolt://192.168.178.88:7687", auth=("neo4j", "rootpw"))
 #CREATE CONSTRAINT ON (n:Account) ASSERT n.address IS UNIQUE
 
 
-
-# count = 0
-# limit_offset = 100000
-# continue_loop = True
-# unique_set = set()
-
 t0 = time.time()
 print("Export Blocks from Postgres into Neo4j Relations: SQL query started...")  
 postgresql_cursor.execute(select_nodes_relations) 
-#rows = postgresql_cursor.fetchall()
 print("Exec SQL finished for {} nodes".format(postgresql_cursor.rowcount))
 
 mem_cache = clear_tmp()
@@ -177,63 +170,8 @@ for batch_key in mem_cache.keys():
 t1 = time.time()          
 #mem_cache.append(tmp)
 
-
 print("Exported Everything in {} seconds".format(t1-t0))
 
-# mem_cache = []
-# tmp = []
-# count = 0
-# for el in unique_set:
-    # tmp.append(el)
-    # count += 1
-    # if count % 100 == 0:
-        # mem_cache.append(tmp)
-        # tmp = []
-# mem_cache.append(tmp)
-# print(sum(len(x) for x in mem_cache))
-
-# Parallel(n_jobs=32)(delayed(addRelations)(el) for el in mem_cache)
-
-
-
-# print(mem_cache["CHANGED_REP"])
-
-
-# g = Graph("bolt://192.168.178.88:7687", auth=("neo4j", "rootpw"))
-# create_relationships(g.auto(), mem_cache["CHANGED_REP"], "CHANGED_REP", \
-    # start_node_key=("Account", "address"), end_node_key=("Account", "address"))
-
-
-
-
-
-
-
-
-
-
-
-for batch_key in mem_cache.keys():  
-    try:
-        g = Graph("bolt://192.168.178.88:7687", auth=("neo4j", "rootpw"))
-        create_relationships(g.auto(), mem_cache[batch_key], batch_key, \
-                    start_node_key=("Account", "address"), end_node_key=("Account", "address"))
-    except Exception as ex:
-        print(ex)
-    print("{} : {} relations imported".format(batch_key,len(mem_cache[batch_key])))
-    
-t2 = time.time()
-print("Imported all relations in {} seconds".format(t2-t1))
-
-# g = Graph("bolt://192.168.178.88:7687", auth=("neo4j", "rootpw"))
- 
-
-# data = [
-    # (("nano_1okxgi68knxhhwppp18ffynst7bceztsty4ft8axzx5krstu5ozprhwnasj8"), {"hash": '2AD5DD30F77AE0C1324C11CDEAD34DEBC615C1BAB0C5F582313E0AA8AD83DE58',"type": 'state', "subtype":'open', "balance": 100000, "amaount" : 100000 , "height" : 1, "local_timestamp": '', "work":'' , "signature": ''}, "nano_3hdbre1i38qr6cj5utyzoa4tyjbazuwjufm9nkhresjqpmte6gizofgzgpwb"),
-# ]
-
-# create_relationships(g.auto(), data, "RECEIVED_FROM", \
-    # start_node_key=("Account", "address"), end_node_key=("Account", "address"))
 
     
     
