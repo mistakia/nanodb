@@ -8,6 +8,7 @@ This project aims to provide up-to-date data pertaining to the [Nano cryptocurre
   - [x] Mysql
   - [x] Parquet
   - [x] Postgres
+  - [x] Neo4j
 - [ ] Hosted snapshots
   - [ ] SQL
   - [ ] Parquet
@@ -48,6 +49,15 @@ python3 scripts/export-lmdb-to-postgres.py --filename [path_lmdb.ldb] [--table] 
 ```
 
 _Edit `config.json` with postgres information_
+
+#### Export from postgres to neo4j
+
+```py
+python3 scripts/create-postgresql-stats-tables.py && \
+python3 export-postgresql-to-neo4j-relations-merged.py
+```
+
+_Edit `config.json` with neo4j information_
 
 #### Export from lmdb to parquet
 
