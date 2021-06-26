@@ -49,9 +49,9 @@ print("Start Create 'account_stats' Table")
 postgresql_cursor.execute(create_account_stats) 
 print("End Create 'account_stats' Table")
 
-# print("Start Create 'source_destination_stats' Table")
-# postgresql_cursor.execute(source_destination_stats) 
-# print("End Create 'source_destination_stats' Table")
+print("Start Create 'source_destination_stats' Table")
+postgresql_cursor.execute(source_destination_stats) 
+print("End Create 'source_destination_stats' Table")
      
 
 
