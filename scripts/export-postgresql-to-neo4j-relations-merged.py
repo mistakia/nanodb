@@ -5,11 +5,8 @@ import psycopg2
 from py2neo import Graph, Node, Relationship
 from py2neo.bulk import create_relationships
 from py2neo.bulk import merge_nodes
-import logging
-from joblib import Parallel, delayed
-import dill as pickle
 import time
-from itertools import islice
+
 
 
 select_nodes_relations = ( 
