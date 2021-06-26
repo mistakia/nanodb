@@ -63,7 +63,8 @@ count = 0
 t0 = time.time()
 t1 = time.time()
 
-g = Graph("bolt://192.168.178.88:7687", auth=("neo4j", "rootpw"))
+neo4j_config = config["neo4j"]["connection"]
+g = Graph("bolt://{}:{}".format(neo4j_config["host"],neo4j_config["port"]), auth=(neo4j_config["user"], neo4j_config["password"]))
 
 # Disabel the follwoig line if you run the script a second time and you get the error:
 # An equivalent constraint already exists, 'Constraint( id=x, name='constraint_xxx', type='UNIQUENESS', schema=(:Account {address}), ownedIndex=x )
@@ -73,10 +74,10 @@ for row in postgresql_cursor:
     bal1 = int(row[2] or 0)/1e30
     bal2 = int(row[6] or 0)/1e30
     mem_nodes.append([row[0], row[1], bal1, row[3]])
-    if row[4] != None: # Genesis received without a destination account
+    if row[4] != None: #Special case for Genesis : initial funding without RECEIVED block (=destination account is empty)
         mem_nodes.append([row[4], row[5] , bal2, row[7]])
     rel = ""
-    
+
     if row[10] == "SEND":
         rel = "SENT_TO"
     elif row[10] == "RECEIVE":
@@ -84,11 +85,11 @@ for row in postgresql_cursor:
     else:
         print("SKIP {} REL {}".format(row[0],row[10]))
         continue
-        
+
     mem_relations[rel].append(
         (row[0], {"interaction_count": row[8], "total_amount":int(row[9])/1e30} , row[4])
-    ) 
-    
+    )
+
     if count % 1000 == 0:
         print("count: {} relations ".format(count),end="\r",)
     count += 1    
@@ -117,9 +118,4 @@ for batch_key in mem_relations.keys():
     except Exception as ex:
         print(ex)            
      
-print("Exported Everything in {} seconds".format(t1-t0))
-
-    
-  
-
-
+print("Exported Everything in {} seconds".format(t1-t0)
