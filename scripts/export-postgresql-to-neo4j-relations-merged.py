@@ -9,16 +9,16 @@ import time
 
 
 
-select_nodes_relations = ( 
+select_nodes_relations = (
 "SELECT stats.source_account,                                       "#0
 "       a1.open_block as s_open_block,                              "#1
 "       a1.balance as s_balance,                                    "#2
-"       a1.block_count as s_block_count,                            "#3 
+"       a1.block_count as s_block_count,                            "#3
 "       stats.destination_account,                                  "#4
 "       a2.open_block as d_open_block,                              "#5
 "       a2.balance as d_balance,                                    "#6
 "       a2.block_count as d_block_count,                            "#7
-"	    stats.block_count as interaction_count,                     "#8
+"	    stats.block_count as interaction_count,                 "#8
 "       stats.total_amount as total_amount,                         "#9
 "       stats.blocktype                                             "#10
 "FROM source_destination_stats stats                                "
@@ -35,20 +35,20 @@ def clear_tmp():
         "UPGRADED_EPOCH" : []}
 
 
-    
+
 with open("config.json") as json_data_file:
     config = json.load(json_data_file)
-    
+
 postgresql_config = config["postgresql"]["connection"]
 conn = psycopg2.connect("host={} port={} dbname={} user={} password={}".format(postgresql_config["host"],postgresql_config["port"],postgresql_config["dbname"],postgresql_config["user"],postgresql_config["password"]))
 conn.set_session(autocommit=False)
-postgresql_cursor = conn.cursor("sel_all_relations") 
+postgresql_cursor = conn.cursor("sel_all_relations")
 postgresql_cursor.itersize = 50000
 
 
 t0 = time.time()
-print("Export Blocks from Postgres into Neo4j Relations: SQL query started...")  
-postgresql_cursor.execute(select_nodes_relations) 
+print("Export Blocks from Postgres into Neo4j Relations: SQL query started...")
+postgresql_cursor.execute(select_nodes_relations)
 #rows = postgresql_cursor.fetchall()
 print("Exec SQL finished for {} nodes".format(postgresql_cursor.rowcount))
 
@@ -67,7 +67,7 @@ g = Graph("bolt://{}:{}".format(neo4j_config["host"],neo4j_config["port"]), auth
 # An equivalent constraint already exists, 'Constraint( id=x, name='constraint_xxx', type='UNIQUENESS', schema=(:Account {address}), ownedIndex=x )
 g.schema.create_uniqueness_constraint('Account', 'address')
 
-for row in postgresql_cursor:     
+for row in postgresql_cursor:
     bal1 = int(row[2] or 0)/1e30
     bal2 = int(row[6] or 0)/1e30
     mem_nodes.append([row[0], row[1], bal1, row[3]])
@@ -89,30 +89,30 @@ for row in postgresql_cursor:
 
     if count % 1000 == 0:
         print("count: {} relations ".format(count),end="\r",)
-    count += 1    
-    if count % 50000 == 0:        
+    count += 1
+    if count % 50000 == 0:
         #create nodes
         merge_nodes(g.auto(), mem_nodes, ("Account", "address"), keys=node_keys)
         mem_nodes = []
-        for batch_key in mem_relations.keys():  
+        for batch_key in mem_relations.keys():
             #create relations
-            try:              
+            try:
                 create_relationships(g.auto(), mem_relations[batch_key], batch_key, \
-                    start_node_key=("Account", "address"), 
+                    start_node_key=("Account", "address"),
                     end_node_key=("Account", "address"))
             except Exception as ex:
-                print(ex)            
+                print(ex)
             print(".", end='')
-        mem_relations = clear_tmp()   
+        mem_relations = clear_tmp()
         t1 = time.time()
 
 #create nodes
 merge_nodes(g.auto(), mem_nodes, ("Account", "address"), keys=node_keys)
-for batch_key in mem_relations.keys():  
-    try:  
+for batch_key in mem_relations.keys():
+    try:
         create_relationships(g.auto(), mem_relations[batch_key], batch_key, \
             start_node_key=("Account", "address"), end_node_key=("Account", "address"))
     except Exception as ex:
-        print(ex)            
-     
+        print(ex)
+
 print("Exported Everything in {} seconds".format(t1-t0)

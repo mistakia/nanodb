@@ -4,6 +4,10 @@ const WS = require('ws')
 const debug = require('debug')
 const dayjs = require('dayjs')
 const nanocurrency = require('nanocurrency')
+const yargs = require('yargs/yargs')
+const { hideBin } = require('yargs/helpers')
+
+const argv = yargs(hideBin(process.argv)).argv
 
 const {
   getAccountInfo,
@@ -23,6 +27,7 @@ const logger = debug('ws')
 debug.enable('ws')
 
 const MIN_BATCH_SIZE = 1000
+const DAYS = argv.days || 3
 const queue = new PQueue({ concurrency: 1 })
 let frontiersQueue = {}
 let blocksQueue = []
@@ -36,7 +41,7 @@ const searchAccounts = async () => {
     count: 100,
     sorting: true,
     threshold: 0,
-    modified_since: dayjs().subtract(3, 'days').unix()
+    modified_since: dayjs().subtract(DAYS, 'days').unix()
   })
 
   const addresses = Object.keys(accounts)
