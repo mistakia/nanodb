@@ -23,5 +23,14 @@
       "dbname": "nanodb_development",
       "port": "5432"
     }
+  },
+  "neo4j": {
+    "client": "neo4j",
+    "connection": {
+      "host": "localhost",
+      "user": "neo4j",
+      "password": "neo4j",
+      "port": "7687"
+    }
   }
 }
