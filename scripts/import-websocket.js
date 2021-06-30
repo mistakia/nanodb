@@ -10,6 +10,7 @@ const {
   getBlocksInfo,
   getLedger,
   formatBlockInfo,
+  formatAccountInfo,
   getChain,
   debounce,
   wait
@@ -63,6 +64,16 @@ const processFrontiers = async (account) => {
 
   const accountInfo = await getAccountInfo({ account })
   if (accountInfo.error) return
+
+  const key = nanocurrency.derivePublicKey(account)
+  db('accounts')
+    .insert({
+      key,
+      account,
+      ...formatAccountInfo(accountInfo)
+    })
+    .onConflict()
+    .merge()
 
   const result = await db('blocks').count('* as blockCount').where({ account })
   if (!result.length) {
@@ -140,19 +151,11 @@ const upsertFrontiers = async () => {
   for (const account of accounts) {
     const accountInfo = await getAccountInfo({ account })
     if (accountInfo.error) continue
+    const key = nanocurrency.derivePublicKey(account)
     accountInserts.push({
+      key,
       account,
-      frontier: accountInfo.confirmed_frontier,
-      open_block: accountInfo.open_block,
-      representative_block: accountInfo.representative_block,
-      balance: accountInfo.confirmed_balance,
-      modified_timestamp: accountInfo.modified_timestamp,
-      block_count: accountInfo.block_count,
-      confirmation_height: accountInfo.confirmed_height,
-      representative: accountInfo.confirmed_representative,
-      weight: accountInfo.weight,
-      pending: accountInfo.confirmed_pending,
-      key: nanocurrency.derivePublicKey(account)
+      ...formatAccountInfo(accountInfo)
     })
   }
 
