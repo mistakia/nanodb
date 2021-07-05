@@ -30,6 +30,25 @@ CREATE TABLE `accounts` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `account_stats`
+--
+
+DROP TABLE IF EXISTS `account_stats`;
+
+CREATE TABLE `account_stats` (
+  `account` char(65) NOT NULL,
+  `block_count` int(11) DEFAULT NULL,
+  `total_amount` decimal(39,0) DEFAULT NULL,
+  `blocktype` tinyint(1) NOT NULL,
+  UNIQUE KEY `account` (`account`),
+  INDEX `total_amount` (`total_amount`),
+  INDEX `blocktype` (`blocktype`),
+  INDEX `block_count` (`block_count`)
+) ENGINE=InnoDB;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `block`
 --
 
@@ -58,7 +77,8 @@ CREATE TABLE `blocks` (
   INDEX `amount` (`amount`),
   INDEX `balance` (`balance`),
   INDEX `representative` (`representative`),
-  INDEX `local_timestamp` (`local_timestamp`)
+  INDEX `local_timestamp` (`local_timestamp`),
+  INDEX `link_as_account` (`link_as_account`)
 ) ENGINE=InnoDB;
 
 -- --------------------------------------------------------
@@ -123,6 +143,26 @@ CREATE TABLE `rollup_daily` (
 
   `timestamp` int(11) DEFAULT NULL,
   UNIQUE KEY `timestamp` (`timestamp`)
+) ENGINE=InnoDB;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `source_destination_stats`
+--
+
+DROP TABLE IF EXISTS `source_destination_stats`;
+
+CREATE TABLE `source_destination_stats` (
+  `source_account` char(65) NOT NULL,
+  `destination_account` char(65) NOT NULL,
+  `block_count` int(11) DEFAULT NULL,
+  `total_amount` decimal(39,0) DEFAULT NULL,
+  `blocktype` tinyint(1) NOT NULL,
+  UNIQUE KEY `link` (`source_account`, `destination_acount`),
+  INDEX `total_amount` (`total_amount`),
+  INDEX `blocktype` (`blocktype`),
+  INDEX `block_count` (`block_count`)
 ) ENGINE=InnoDB;
 
 -- --------------------------------------------------------

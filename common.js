@@ -60,7 +60,7 @@ const getFrontierCount = () => {
 
 /* eslint-disable camelcase */
 const getLedger = ({
-  account,
+  account = constants.BURN_ACCOUNT,
   count = 1,
   threshold = 100000000000000000,
   modified_since,
