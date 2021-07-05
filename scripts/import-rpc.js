@@ -1,60 +1,109 @@
-const yargs = require('yargs/yargs')
 const debug = require('debug')
+const dayjs = require('dayjs')
 
-const { hideBin } = require('yargs/helpers')
-const argv = yargs(hideBin(process.argv)).argv
 const nanocurrency = require('nanocurrency')
 
 const constants = require('../constants')
 const db = require('../db')
-const logger = debug('rpc')
-debug.enable('rpc')
 const {
   getFrontierCount,
   getLedger,
   getChain,
+  getAccountInfo,
   getBlocksInfo,
   formatBlockInfo,
   formatAccountInfo
 } = require('../common')
 
-let queue = []
+const logger = debug('rpc')
+debug.enable('rpc')
 
-const processQueue = async () => {
-  if (queue.length < 10000) {
+const MIN_BATCH_SIZE = 1000
+
+/* let queue = []
+ * const processQueue = async () => {
+ *   if (queue.length < 10000) {
+ *     return
+ *   }
+ *
+ *   const { blocks } = await getBlocksInfo({ hashes: queue })
+ *   const blockInserts = []
+ *   for (const hash in blocks) {
+ *     const block = blocks[hash]
+ *     blockInserts.push({ hash, ...formatBlockInfo(block) })
+ *   }
+ *
+ *   if (blockInserts.length) {
+ *     logger(`saving ${blockInserts.length} blocks`)
+ *     await db('blocks').insert(blockInserts).onConflict().merge()
+ *   }
+ *
+ *   queue = []
+ * }
+ *  */
+
+const processAccountBlocks = async (account) => {
+  logger(`processing account ${account}`)
+
+  const accountInfo = await getAccountInfo({
+    account
+  })
+
+  if (accountInfo.error) return
+
+  const key = nanocurrency.derivePublicKey(account)
+  db('accounts')
+    .insert({
+      key,
+      account,
+      ...formatAccountInfo(accountInfo)
+    })
+    .onConflict()
+    .merge()
+
+  const result = await db('blocks').count('* as blockCount').where({ account })
+  if (!result.length) {
     return
   }
 
-  const { blocks } = await getBlocksInfo({ hashes: queue })
-  const blockInserts = []
-  for (const hash in blocks) {
-    const block = blocks[hash]
-    blockInserts.push({ hash, ...formatBlockInfo(block) })
-  }
+  let { blockCount } = result[0]
+  let cursor = accountInfo.frontier
+  const height = parseInt(accountInfo.confirmed_height, 10)
+  logger(
+    `found ${blockCount} blocks for account ${account} with height ${height}`
+  )
 
-  if (blockInserts.length) {
-    logger(`saving ${blockInserts.length} blocks`)
-    await db('blocks').insert(blockInserts).onConflict().merge()
-  }
-
-  queue = []
-}
-
-const processAccountBlocks = async ({ account, frontier }) => {
-  logger(`Fetching blocks for ${account}`)
-
-  const batchSize = 1000
-  let chain
-  let cursor = frontier
-  do {
-    chain = await getChain({ block: cursor, count: batchSize })
+  while (blockCount < height) {
+    logger(
+      `account height: ${height}, current count: ${blockCount}, cursor: ${cursor}`
+    )
+    const batchSize = Math.min(accountInfo.block_count, MIN_BATCH_SIZE)
+    const chain = await getChain({ block: cursor, count: batchSize })
     cursor = chain.blocks[chain.blocks.length - 1]
-    queue = queue.concat(chain.blocks)
-    await processQueue()
-  } while (chain.blocks.length === batchSize)
+    const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
+
+    const blockInserts = []
+    for (const hash in blocks) {
+      const block = blocks[hash]
+      blockInserts.push({ hash, ...formatBlockInfo(block) })
+    }
+
+    if (blockInserts.length) {
+      logger(`saving ${blockInserts.length} blocks`)
+      await db('blocks').insert(blockInserts).onConflict().merge()
+    }
+
+    // update count
+    const result = await db('blocks')
+      .count('* as blockCount')
+      .where({ account })
+    blockCount = result[0].blockCount
+  }
+
+  logger(`finished processing blocks for ${account}`)
 }
 
-const main = async () => {
+const main = async ({ hours, threshold, includeBlocks } = {}) => {
   const { count } = await getFrontierCount()
   logger(`Frontier Count: ${count}`)
 
@@ -63,8 +112,14 @@ const main = async () => {
   let addressCount = 0
   let account = constants.BURN_ACCOUNT
 
-  await db.raw('SET foreign_key_checks = 0;')
-  await db.raw('SET unique_checks = 0;')
+  const opts = {
+    count: batchSize,
+    threshold
+  }
+
+  if (hours) {
+    opts.modified_since = dayjs().subtract(hours, 'hours').unix()
+  }
 
   do {
     logger(
@@ -72,9 +127,8 @@ const main = async () => {
     )
 
     const { accounts } = await getLedger({
-      account,
-      count: batchSize,
-      threshold: argv.threshold
+      ...opts,
+      account
     })
 
     const addresses = Object.keys(accounts)
@@ -93,10 +147,9 @@ const main = async () => {
     }
     await db('accounts').insert(accountInserts).onConflict().merge()
 
-    if (argv.b) {
-      for (const [account, accountInfo] of Object.entries(accounts)) {
-        const { frontier } = accountInfo
-        await processAccountBlocks({ frontier, account })
+    if (includeBlocks) {
+      for (const account of Object.keys(accounts)) {
+        await processAccountBlocks(account)
       }
     }
 
@@ -107,8 +160,28 @@ const main = async () => {
   process.exit()
 }
 
-try {
-  main()
-} catch (e) {
-  console.log(e)
+module.exprots = main
+
+if (!module.parent) {
+  const yargs = require('yargs/yargs')
+  const { hideBin } = require('yargs/helpers')
+  const argv = yargs(hideBin(process.argv)).argv
+
+  const init = async () => {
+    try {
+      const hours = argv.hours
+      const threshold = argv.threshold
+      await main({ hours, threshold, includeBlocks: argv.blocks })
+    } catch (err) {
+      console.log(err)
+    }
+    process.exit()
+  }
+
+  try {
+    init()
+  } catch (err) {
+    console.log(err)
+    process.exit()
+  }
 }
