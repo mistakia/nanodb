@@ -51,6 +51,7 @@ api.use(
   })
 )
 
+api.get('/api/check', (req, res) => res.status(200).send({ success: true }))
 api.use('/api/ledger', routes.ledger)
 api.use('/api/accounts', routes.accounts)
 
