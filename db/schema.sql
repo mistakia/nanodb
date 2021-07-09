@@ -72,6 +72,7 @@ CREATE TABLE `blocks` (
   `work` char(16) NOT NULL,
   `subtype` tinyint(1) DEFAULT NULL,
   UNIQUE KEY `block` (`hash`),
+  UNIQUE KEY `height` (`account`, `height`),
   INDEX `account` (`account`),
   INDEX `type` (`type`),
   INDEX `subtype` (`subtype`),
