@@ -38,7 +38,7 @@ for (const [key, value] of amounts) {
 const main = async () => {
   let time = dayjs().utc().startOf('day')
   const days = argv.days || 1
-  const end = argv.full ? dayjs('1550832660', 'X') : time.subtract(days, 'day')
+  const end = argv.full ? dayjs.unix('1550832660') : time.subtract(days, 'day')
 
   do {
     const blocks = await db('blocks')
