@@ -10,6 +10,7 @@ const db = require('../db')
 
 dayjs.extend(utc)
 
+const firstTimestamp = '1550832660' // earliest local_timestamp in blocks table
 const argv = yargs(hideBin(process.argv)).argv
 const logger = debug('calculate:blocks-per-day')
 debug.enable('calculate:blocks-per-day')
@@ -38,7 +39,7 @@ for (const [key, value] of amounts) {
 const main = async () => {
   let time = dayjs().utc().startOf('day')
   const days = argv.days || 1
-  const end = argv.full ? dayjs.unix('1550832660') : time.subtract(days, 'day')
+  const end = argv.full ? dayjs.unix(firstTimestamp) : time.subtract(days, 'day')
 
   do {
     const blocks = await db('blocks')
