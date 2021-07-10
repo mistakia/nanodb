@@ -1,20 +1,18 @@
 const express = require('express')
 const router = express.Router()
 
-router.get('/', async (req, res) => {
+router.get('/daily', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
-    /* const cachedEvents = cache.get('github')
-     * if (cachedEvents) {
-     *   return res.status(200).send(cachedEvents)
-     * }
+    const cacheKey = '/ledger/daily'
+    const cached = cache.get(cacheKey)
+    if (cached) {
+      return res.status(200).send(cached)
+    }
 
-     * const events = await db('github_events')
-     *   .orderBy('created_at', 'desc')
-     *   .limit(20)
-
-     * cache.set('github', events, 60) */
-    res.status(200).send({ success: true })
+    const data = await db('rollup_daily')
+    cache.set(cacheKey, data, 900)
+    res.status(200).send(data)
   } catch (error) {
     logger(error)
     res.status(500).send({ error: error.toString() })
