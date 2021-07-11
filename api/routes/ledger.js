@@ -10,7 +10,7 @@ router.get('/daily', async (req, res) => {
       return res.status(200).send(cached)
     }
 
-    const data = await db('rollup_daily')
+    const data = await db('rollup_daily').orderBy('timestamp', 'desc')
     cache.set(cacheKey, data, 900)
     res.status(200).send(data)
   } catch (error) {
