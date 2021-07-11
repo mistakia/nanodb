@@ -114,6 +114,8 @@ CREATE TABLE `rollup_daily` (
   `change_count` int(11) DEFAULT 0,
   `send_volume` decimal(39,0) DEFAULT 0, -- amount of nano sent
   `change_volume` decimal(39,0) DEFAULT 0, -- amount of voting weight shifted
+  `receive_volume` decimal(39,0) DEFAULT 0,
+  `open_volume` decimal(39,0) DEFAULT 0,
 
   `_1000000_count` int(11) DEFAULT 0,
   `_100000_count` int(11) DEFAULT 0,

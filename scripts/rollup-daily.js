@@ -51,6 +51,8 @@ const main = async () => {
 
     let sendVolume = BigNumber(0)
     let changeVolume = BigNumber(0)
+    let openVolume = BigNumber(0)
+    let receiveVolume = BigNumber(0)
     const counters = {
       send_count: 0,
       receive_count: 0,
@@ -87,19 +89,23 @@ const main = async () => {
       addresses[block.account] = true
       const blockBalance = BigNumber(block.balance)
       const blockAmount = BigNumber(block.amount)
-      sendVolume = sendVolume.plus(blockAmount)
 
       switch (block.type) {
         case constants.blockType.state:
           switch (block.subtype) {
             case constants.blockSubType.send:
+              sendVolume = sendVolume.plus(blockAmount)
               processSendAmount(blockAmount)
               counters.send_count += 1
               break
 
             case constants.blockSubType.receive:
               counters.receive_count += 1
-              if (block.height === 1) counters.open_count += 1
+              receiveVolume = receiveVolume.plus(blockAmount)
+              if (block.height === 1) {
+                openVolume = openVolume.plus(blockAmount)
+                counters.open_count += 1
+              }
               break
 
             case constants.blockSubType.change:
@@ -110,12 +116,17 @@ const main = async () => {
           break
 
         case constants.blockType.send:
+          sendVolume = sendVolume.plus(blockAmount)
           processSendAmount(blockAmount)
           counters.send_count += 1
           break
 
         case constants.blockType.receive:
-          if (block.height === 1) counters.open_count += 1
+          receiveVolume = receiveVolume.plus(blockAmount)
+          if (block.height === 1) {
+            openVolume = openVolume.plus(blockAmount)
+            counters.open_count += 1
+          }
           counters.receive_count += 1
           break
 
@@ -132,6 +143,8 @@ const main = async () => {
       blocks: blocks.length,
       send_volume: sendVolume.toFixed(),
       change_volume: changeVolume.toFixed(),
+      open_volume: openVolume.toFixed(),
+      receive_volume: receiveVolume.toFixed(),
 
       _000001_below_count: amountBottomRangeCounter,
       _000001_below_total: amountBottomRangeTotal.toFixed(),
