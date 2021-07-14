@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 
-router.get('/:address/transactions/:type', async (req, res) => {
+router.get('/:address/blocks/:type/summary', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
     const { address, type } = req.params
@@ -19,7 +19,7 @@ router.get('/:address/transactions/:type', async (req, res) => {
       return res.status(401).send({ error: 'missing type' })
     }
 
-    const types = ['send', 'receive']
+    const types = ['send', 'receive', 'change']
     if (!types.includes(type)) {
       return res.status(401).send({ error: 'invalid type' })
     }
@@ -59,10 +59,15 @@ router.get('/:address/transactions/:type', async (req, res) => {
             this.whereNull('subtype')
             this.orWhere('subtype', 3)
           })
-        } else {
+        } else if (type === 'receive') {
           this.whereIn('type', [1, 2, 3]).where(function () {
             this.whereNull('subtype')
             this.orWhereIn('subtype', [1, 2])
+          })
+        } else {
+          this.whereIn('type', [1, 5]).where(function () {
+            this.whereNull('subtype')
+            this.orWhere('subtype', 4)
           })
         }
       })
