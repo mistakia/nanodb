@@ -1,6 +1,46 @@
 const express = require('express')
 const router = express.Router()
 
+const constants = require('../../constants')
+
+router.get('/:address/open', async (req, res) => {
+  const { logger, cache, db } = req.app.locals
+  try {
+    const { address } = req.params
+
+    if (!address) {
+      return res.status(401).send({ error: 'missing address' })
+    }
+
+    const re = /^(nano|xrb)_[13]{1}[13456789abcdefghijkmnopqrstuwxyz]{59}$/gi
+    if (!re.test(address)) {
+      return res.status(401).send({ error: 'invalid address' })
+    }
+
+    const cacheKey = `/account/${address}/summary`
+    const cacheValue = cache.get(cacheKey)
+    if (cacheValue) {
+      return res.status(200).send(cacheValue)
+    }
+
+    const funding = await db('blocks')
+      .select('blocks.local_timestamp as open_timestamp')
+      .select('blocks.balance as open_balance')
+      .select('b.local_timestamp as funding_timestamp')
+      .select('b.account as funding_account')
+      .where('blocks.account', address)
+      .where('blocks.height', 1)
+      .innerJoin({ b: 'blocks' }, 'b.hash', 'blocks.link')
+
+    const data = funding.length ? funding[0] : {}
+    if (funding.length) cache.set(cacheKey, data, 60)
+    res.status(200).send(data)
+  } catch (error) {
+    logger(error)
+    res.status(500).send({ error: error.toString() })
+  }
+})
+
 router.get('/:address/blocks/:type/summary', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
@@ -55,21 +95,37 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
 
         if (type === 'send') {
           this.select('link_as_account as destination_account')
-            .whereIn('type', [1, 4]).where(function () {
+            .whereIn('type', [
+              constants.blockType.state,
+              constants.blockType.send
+            ])
+            .where(function () {
               this.whereNull('subtype')
-              this.orWhere('subtype', 3)
+              this.orWhere('subtype', constants.blockSubType.send)
             })
         } else if (type === 'receive') {
           this.select('link_as_account as destination_account')
-            .whereIn('type', [1, 2, 3]).where(function () {
+            .whereIn('type', [
+              constants.blockType.state,
+              constants.blockType.receive,
+              constants.blockType.open
+            ])
+            .where(function () {
               this.whereNull('subtype')
-              this.orWhereIn('subtype', [1, 2])
+              this.orWhereIn('subtype', [
+                constants.blockSubType.open,
+                constants.blockSubType.receive
+              ])
             })
         } else {
           this.select('representative as destination_account')
-            .whereIn('type', [1, 5]).where(function () {
+            .whereIn('type', [
+              constants.blockType.state,
+              constants.blockType.change
+            ])
+            .where(function () {
               this.whereNull('subtype')
-              this.orWhere('subtype', 4)
+              this.orWhere('subtype', constants.blockSubType.change)
             })
         }
       })
