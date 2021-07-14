@@ -47,7 +47,6 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
       .orderBy('total_amount', 'desc')
       .from(function () {
         this.select('account as source_account')
-          .select('link_as_account as destination_account')
           .select('amount')
           .select('local_timestamp')
           .from('blocks')
@@ -55,20 +54,23 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
           .as('t1')
 
         if (type === 'send') {
-          this.whereIn('type', [1, 4]).where(function () {
-            this.whereNull('subtype')
-            this.orWhere('subtype', 3)
-          })
+          this.select('link_as_account as destination_account')
+            .whereIn('type', [1, 4]).where(function () {
+              this.whereNull('subtype')
+              this.orWhere('subtype', 3)
+            })
         } else if (type === 'receive') {
-          this.whereIn('type', [1, 2, 3]).where(function () {
-            this.whereNull('subtype')
-            this.orWhereIn('subtype', [1, 2])
-          })
+          this.select('link_as_account as destination_account')
+            .whereIn('type', [1, 2, 3]).where(function () {
+              this.whereNull('subtype')
+              this.orWhereIn('subtype', [1, 2])
+            })
         } else {
-          this.whereIn('type', [1, 5]).where(function () {
-            this.whereNull('subtype')
-            this.orWhere('subtype', 4)
-          })
+          this.select('representative as destination_account')
+            .whereIn('type', [1, 5]).where(function () {
+              this.whereNull('subtype')
+              this.orWhere('subtype', 4)
+            })
         }
       })
 
