@@ -30,7 +30,7 @@ router.get('/:address/open', async (req, res) => {
       .select('b.account as funding_account')
       .where('blocks.account', address)
       .where('blocks.height', 1)
-      .innerJoin({ b: 'blocks' }, 'b.hash', 'blocks.link')
+      .leftJoin({ b: 'blocks' }, 'b.hash', 'blocks.link')
 
     const data = funding.length ? funding[0] : {}
     if (funding.length) cache.set(cacheKey, data, 60)
