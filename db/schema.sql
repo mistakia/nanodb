@@ -50,6 +50,29 @@ CREATE TABLE `account_stats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `account_blocks_summary`
+--
+
+DROP TABLE IF EXISTS `account_blocks_summary`;
+
+CREATE TABLE `account_blocks_summary` (
+  `source_account` char(65) NOT NULL,
+  `destination_account` char(65) NOT NULL,
+  `type` varchar(7) NOT NULL,
+  `block_count` int(11) DEFAULT NULL,
+  `min_timestamp` int(11) NOT NULL,
+  `max_timestamp` int(11) NOT NULL,
+  `min_amount` decimal(39,0) DEFAULT NULL,
+  `max_amount` decimal(39,0) DEFAULT NULL,
+  `total_amount` decimal(39,0) DEFAULT NULL,
+  INDEX `type` (`type`),
+  INDEX `source_account` (`source_account`),
+  INDEX `destination_account` (`destination_account`)
+) ENGINE=InnoDB;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `block`
 --
 
