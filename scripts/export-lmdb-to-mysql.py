@@ -341,10 +341,8 @@ try:
 
                 if btype == Nanodb.EnumBlocktype.state:
                     data_block["link"] = block.block_value.block.link.hex().upper()
-                    data_block["link_as_account"] = nanolib.accounts.get_account_id(
-                        prefix=nanolib.AccountIDPrefix.NANO,
-                        public_key=block.block_value.block.link.hex(),
-                    )
+                    data_block["link_as_account"] = None
+                    # TODO
                 elif btype == Nanodb.EnumBlocktype.send:
                     data_block[
                         "link"
@@ -356,7 +354,7 @@ try:
                 elif btype == Nanodb.EnumBlocktype.receive:
                     data_block["link"] = block.block_value.block.source.hex().upper()
                     data_block["link_as_account"] = None
-                    # TODO - use source hash to get account
+                    # TODO - use link hash to get account
                 else:
                     data_block["link"] = None
                     data_block["link_as_account"] = None

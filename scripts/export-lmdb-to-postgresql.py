@@ -397,10 +397,8 @@ try:
 
                     if btype == Nanodb.EnumBlocktype.state:
                         data_block["link"] = block.block_value.block.link.hex().upper()
-                        data_block["link_as_account"] = nanolib.accounts.get_account_id(
-                            prefix=nanolib.AccountIDPrefix.NANO,
-                            public_key=block.block_value.block.link.hex(),
-                        )
+                        data_block["link_as_account"] = None
+                        # TODO
                     elif btype == Nanodb.EnumBlocktype.send:
                         data_block[
                             "link"
