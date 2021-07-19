@@ -141,7 +141,7 @@ const main = async ({ hours, threshold }) => {
           })
       })
 
-    const res = await Promise.all([
+    await Promise.all([
       db.raw(`INSERT INTO account_blocks_summary ${send.toString()}`),
       db.raw(`INSERT INTO account_blocks_summary ${receive.toString()}`),
       db.raw(`INSERT INTO account_blocks_summary ${change.toString()}`)
