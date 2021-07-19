@@ -27,8 +27,8 @@ const importAccountBlocks = async (account) => {
 
   const batchSize = 5000
   let blockCount = 0
-  let height = accountInfo.confirmation_height
-  let cursor = accountInfo.confirmation_height_frontier
+  let height = accountInfo.confirmed_height
+  let cursor = accountInfo.confirmed_frontier
   do {
     logger(`Fetching blocks from height: ${height} (${account})`)
 
