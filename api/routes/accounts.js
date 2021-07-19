@@ -85,6 +85,8 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
       .sum('amount as total_amount')
       .groupBy('source_account', 'destination_account')
       .orderBy('total_amount', 'desc')
+      .limit(limit)
+      .offset(offset)
       .from(function () {
         this.select('account as source_account')
           .select('amount')
