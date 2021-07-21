@@ -164,8 +164,7 @@ const formatBlockInfo = ({
   previous: contents.previous,
   representative: contents.representative,
   link: contents.link || contents.destination || contents.source,
-  link_as_account:
-    contents.link_as_account || contents.destination || source_account,
+  link_account: source_account || contents.link_as_account || contents.destination || null,
   signature: contents.signature,
   work: contents.work,
   type: constants.blockType[contents.type],

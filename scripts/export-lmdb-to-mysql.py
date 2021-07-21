@@ -23,13 +23,13 @@ mysql_config = config["mysql"]["connection"]
 add_block = (
     "INSERT INTO blocks "
     "(hash, amount, balance, height, local_timestamp, confirmed,"
-    "type, account, previous, representative, link, link_as_account, signature,"
+    "type, account, previous, representative, link, link_account, signature,"
     "work, subtype) VALUES (%(hash)s, %(amount)s, %(balance)s, %(height)s,"
     "%(local_timestamp)s, %(confirmed)s, %(type)s, %(account)s, %(previous)s,"
-    "%(representative)s, %(link)s, %(link_as_account)s, %(signature)s, %(work)s,"
+    "%(representative)s, %(link)s, %(link_account)s, %(signature)s, %(work)s,"
     "%(subtype)s) ON DUPLICATE KEY UPDATE amount=amount, balance=balance, height=height,"
     "account=account, previous=previous, representative=representative, link=link,"
-    "link_as_account=link_as_account, signature=signature, work=work, subtype=subtype"
+    "link_account=link_account, signature=signature, work=work, subtype=subtype"
 )
 
 add_account = (
@@ -341,23 +341,23 @@ try:
 
                 if btype == Nanodb.EnumBlocktype.state:
                     data_block["link"] = block.block_value.block.link.hex().upper()
-                    data_block["link_as_account"] = None
+                    data_block["link_account"] = None
                     # TODO
                 elif btype == Nanodb.EnumBlocktype.send:
                     data_block[
                         "link"
                     ] = block.block_value.block.destination.hex().upper()
-                    data_block["link_as_account"] = nanolib.accounts.get_account_id(
+                    data_block["link_account"] = nanolib.accounts.get_account_id(
                         prefix=nanolib.AccountIDPrefix.NANO,
                         public_key=block.block_value.block.destination.hex(),
                     )
                 elif btype == Nanodb.EnumBlocktype.receive:
                     data_block["link"] = block.block_value.block.source.hex().upper()
-                    data_block["link_as_account"] = None
+                    data_block["link_account"] = None
                     # TODO - use link hash to get account
                 else:
                     data_block["link"] = None
-                    data_block["link_as_account"] = None
+                    data_block["link_account"] = None
 
                 data_block[
                     "signature"

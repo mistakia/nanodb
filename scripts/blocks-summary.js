@@ -64,7 +64,7 @@ const main = async ({ hours, threshold }) => {
           .whereIn('account', addresses)
           .as('t1')
 
-        this.select('link_as_account as destination_account')
+        this.select('link_account as destination_account')
           .whereIn('type', [
             constants.blockType.state,
             constants.blockType.send
@@ -95,7 +95,7 @@ const main = async ({ hours, threshold }) => {
           .whereIn('account', addresses)
           .as('t1')
 
-        this.select('link_as_account as destination_account')
+        this.select('link_account as destination_account')
           .whereIn('type', [
             constants.blockType.state,
             constants.blockType.receive,

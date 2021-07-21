@@ -96,7 +96,7 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
           .as('t1')
 
         if (type === 'send') {
-          this.select('link_as_account as destination_account')
+          this.select('link_account as destination_account')
             .whereIn('type', [
               constants.blockType.state,
               constants.blockType.send
@@ -106,7 +106,7 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
               this.orWhere('subtype', constants.blockSubType.send)
             })
         } else if (type === 'receive') {
-          this.select('link_as_account as destination_account')
+          this.select('link_account as destination_account')
             .whereIn('type', [
               constants.blockType.state,
               constants.blockType.receive,

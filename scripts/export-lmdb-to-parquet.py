@@ -222,7 +222,7 @@ try:
                 pa.field("previous", pa.string()),
                 pa.field("representative", pa.string()),
                 pa.field("link", pa.string()),
-                pa.field("link_as_account", pa.string()),
+                pa.field("link_account", pa.string()),
                 pa.field("signature", pa.string()),
                 pa.field("work", pa.string()),
                 pa.field("amount", pa.decimal128(39, 0)),
@@ -315,22 +315,22 @@ try:
                 if btype == Nanodb.EnumBlocktype.state:
                     data_block["link"] = block.block_value.block.link.hex().upper()
                     # TODO - Pairing send's block hash (open/receive), 0 (change) or destination public key (send)
-                    data_block["link_as_account"] = None
+                    data_block["link_account"] = None
                 elif btype == Nanodb.EnumBlocktype.send:
                     data_block[
                         "link"
                     ] = block.block_value.block.destination.hex().upper()
-                    data_block["link_as_account"] = nanolib.accounts.get_account_id(
+                    data_block["link_account"] = nanolib.accounts.get_account_id(
                         prefix=nanolib.AccountIDPrefix.NANO,
                         public_key=block.block_value.block.destination.hex(),
                     )
                 elif btype == Nanodb.EnumBlocktype.receive:
                     data_block["link"] = block.block_value.block.source.hex().upper()
-                    data_block["link_as_account"] = None
+                    data_block["link_account"] = None
                     # TODO - use source has to get account
                 else:
                     data_block["link"] = None
-                    data_block["link_as_account"] = None
+                    data_block["link_account"] = None
 
                 data_block[
                     "signature"

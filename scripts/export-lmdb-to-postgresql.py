@@ -30,14 +30,14 @@ accounts_enable_index = "UPDATE pg_index SET indisready=true WHERE indrelid = (S
 add_block = (
     "INSERT INTO blocks "
     "(hash, amount, balance, height, local_timestamp, confirmed,"
-    "type, account, previous, representative, link, link_as_account, signature,"
+    "type, account, previous, representative, link, link_account, signature,"
     "work, subtype) VALUES (%(hash)s, %(amount)s, %(balance)s, %(height)s,"
     "%(local_timestamp)s, %(confirmed)s, %(type)s, %(account)s, %(previous)s,"
-    "%(representative)s, %(link)s, %(link_as_account)s, %(signature)s, %(work)s,"
+    "%(representative)s, %(link)s, %(link_account)s, %(signature)s, %(work)s,"
     "%(subtype)s)"
     "ON CONFLICT (hash) DO UPDATE SET amount=excluded.amount, balance=excluded.balance, height=excluded.height,"
     "account=excluded.account, previous=excluded.previous, representative=excluded.representative, link=excluded.link,"
-    "link_as_account=excluded.link_as_account, signature=excluded.signature, work=excluded.work, subtype=excluded.subtype"
+    "link_account=excluded.link_account, signature=excluded.signature, work=excluded.work, subtype=excluded.subtype"
 )
 
 add_account = (
@@ -397,13 +397,13 @@ try:
 
                     if btype == Nanodb.EnumBlocktype.state:
                         data_block["link"] = block.block_value.block.link.hex().upper()
-                        data_block["link_as_account"] = None
+                        data_block["link_account"] = None
                         # TODO
                     elif btype == Nanodb.EnumBlocktype.send:
                         data_block[
                             "link"
                         ] = block.block_value.block.destination.hex().upper()
-                        data_block["link_as_account"] = nanolib.accounts.get_account_id(
+                        data_block["link_account"] = nanolib.accounts.get_account_id(
                             prefix=nanolib.AccountIDPrefix.NANO,
                             public_key=block.block_value.block.destination.hex(),
                         )
@@ -411,11 +411,11 @@ try:
                         data_block[
                             "link"
                         ] = block.block_value.block.source.hex().upper()
-                        data_block["link_as_account"] = None
+                        data_block["link_account"] = None
                         # TODO - use source has to get account
                     else:
                         data_block["link"] = None
-                        data_block["link_as_account"] = None
+                        data_block["link_account"] = None
 
                     data_block[
                         "signature"

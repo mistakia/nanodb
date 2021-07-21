@@ -38,12 +38,17 @@ DROP TABLE IF EXISTS `account_stats`;
 CREATE TABLE `account_stats` (
   `account` char(65) NOT NULL,
   `block_count` int(11) DEFAULT NULL,
+  `account_count` int(11) DEFAULT NULL,
+  `min_timestamp` int(11) NOT NULL,
+  `max_timestamp` int(11) NOT NULL,
+  `min_amount` decimal(39,0) DEFAULT NULL,
+  `max_amount` decimal(39,0) DEFAULT NULL,
   `total_amount` decimal(39,0) DEFAULT NULL,
-  `blocktype` tinyint(1) NOT NULL,
-  `modified_timestamp` int(11) NOT NULL,
-  UNIQUE KEY `account` (`account`),
+  `max_account` char(65) NOT NULL,
+  `type` tinyint(1) NOT NULL
+  UNIQUE KEY `account` (`account`, `type`),
   INDEX `total_amount` (`total_amount`),
-  INDEX `blocktype` (`blocktype`),
+  INDEX `type` (`type`),
   INDEX `block_count` (`block_count`)
 ) ENGINE=InnoDB;
 
@@ -90,7 +95,7 @@ CREATE TABLE `blocks` (
   `previous` char(64) DEFAULT NULL,
   `representative` char(65) DEFAULT NULL,
   `link` char(65) DEFAULT NULL,
-  `link_as_account` char(65) DEFAULT NULL,
+  `link_account` char(65) DEFAULT NULL,
   `signature` char(128) NOT NULL,
   `work` char(16) NOT NULL,
   `subtype` tinyint(1) DEFAULT NULL,
@@ -103,7 +108,7 @@ CREATE TABLE `blocks` (
   INDEX `balance` (`balance`),
   INDEX `representative` (`representative`),
   INDEX `local_timestamp` (`local_timestamp`),
-  INDEX `link_as_account` (`link_as_account`)
+  INDEX `link_account` (`link_account`)
 ) ENGINE=InnoDB;
 
 -- --------------------------------------------------------

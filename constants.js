@@ -3,6 +3,11 @@ module.exports = {
     'nano_1111111111111111111111111111111111111111111111111111hifc8npp',
   OPEN_BLOCK_PREVIOUS:
     '0000000000000000000000000000000000000000000000000000000000000000',
+  type: {
+    send: 1,
+    receive: 2,
+    change: 3
+  },
   blockType: {
     state: 1,
     open: 2,

@@ -22,7 +22,7 @@ source_destination_stats = (
     "SELECT source_account,destination_account, count(*) as block_count ,sum(amount) as total_amount,'SEND' as blocktype         "
     # "INTO source_destination_stats                                                                                               "
     "FROM                                                                                                                        "
-    "(  SELECT b1.account as source_account, b1.link_as_account as destination_account,b1.amount                                 "
+    "(  SELECT b1.account as source_account, b1.link_account as destination_account,b1.amount                                 "
     "   FROM blocks b1                                                                                                           "
     "   WHERE b1.type in (1,4) AND (b1.subtype ISNULL or b1.subtype = 3)) as t1                                                  "
     "GROUP BY source_account,destination_account                                                                                 "

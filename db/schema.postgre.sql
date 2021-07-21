@@ -41,10 +41,10 @@ CREATE TABLE blocks (
     previous character varying(65) DEFAULT NULL::character varying,
     representative character varying(65) DEFAULT NULL::character varying,
     link character varying(65) DEFAULT NULL::character varying,
-    link_as_account character varying(65) DEFAULT NULL::character varying,
+    link_account character varying(65) DEFAULT NULL::character varying,
     signature character varying(128) DEFAULT NULL::character varying,
     work character varying(16) DEFAULT NULL::character varying,
-    subtype integer DEFAULT NULL::integer 
+    subtype integer DEFAULT NULL::integer
 );
 
 CREATE INDEX blocks_account ON blocks USING btree(account);

@@ -20,7 +20,7 @@ fields = [
     pa.field("previous", pa.string()),
     pa.field("representative", pa.string()),
     pa.field("link", pa.string()),
-    pa.field("link_as_account", pa.string()),
+    pa.field("link_account", pa.string()),
     pa.field("signature", pa.string()),
     pa.field("work", pa.string()),
     pa.field("subtype", pa.int8()),
