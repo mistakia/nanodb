@@ -165,7 +165,12 @@ const formatBlockInfo = ({
   representative: contents.representative,
   link: contents.link || contents.destination || contents.source,
   link_account:
-    source_account || contents.link_as_account || contents.destination || null,
+    (source_account !== '0' && source_account) || // receive
+    (contents.link_as_account !== constants.BURN_ACCOUNT &&
+      contents.link_as_account) || // send
+    contents.destination || // send
+    contents.representative || // change
+    null,
   signature: contents.signature,
   work: contents.work,
   type: constants.blockType[contents.type],
