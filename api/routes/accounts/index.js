@@ -1,7 +1,9 @@
 const express = require('express')
-const router = express.Router()
 
-const constants = require('../../constants')
+const constants = require('../../../constants')
+const send = require('./send')
+
+const router = express.Router()
 
 router.get('/:address/open', async (req, res) => {
   const { logger, cache, db } = req.app.locals
@@ -139,5 +141,7 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
     res.status(500).send({ error: error.toString() })
   }
 })
+
+router.use('/send', send)
 
 module.exports = router
