@@ -45,7 +45,7 @@ CREATE TABLE `account_stats` (
   `max_amount` decimal(39,0) DEFAULT NULL,
   `total_amount` decimal(39,0) DEFAULT NULL,
   `max_account` char(65) NOT NULL,
-  `type` tinyint(1) NOT NULL
+  `type` tinyint(1) NOT NULL,
   UNIQUE KEY `account` (`account`, `type`),
   INDEX `total_amount` (`total_amount`),
   INDEX `type` (`type`),
@@ -192,7 +192,7 @@ CREATE TABLE `source_destination_stats` (
   `total_amount` decimal(39,0) DEFAULT NULL,
   `blocktype` tinyint(1) NOT NULL,
   `modified_timestamp` int(11) NOT NULL,
-  UNIQUE KEY `link` (`source_account`, `destination_acount`),
+  UNIQUE KEY `link` (`source_account`, `destination_account`),
   INDEX `total_amount` (`total_amount`),
   INDEX `blocktype` (`blocktype`),
   INDEX `block_count` (`block_count`)
