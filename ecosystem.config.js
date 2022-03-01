@@ -1,6 +1,7 @@
 module.exports = {
   apps: [
     {
+      name: 'nanodb-api',
       script: 'server.js',
       watch: './api',
       env_production: {
