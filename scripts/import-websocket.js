@@ -2,7 +2,6 @@ const ReconnectingWebSocket = require('reconnecting-websocket')
 const { default: PQueue } = require('p-queue')
 const WS = require('ws')
 const debug = require('debug')
-// const dayjs = require('dayjs')
 const nanocurrency = require('nanocurrency')
 // const yargs = require('yargs/yargs')
 // const { hideBin } = require('yargs/helpers')
@@ -12,14 +11,10 @@ const nanocurrency = require('nanocurrency')
 const {
   getAccountInfo,
   getBlocksInfo,
-  // getLedger,
   formatBlockInfo,
   formatAccountInfo,
   getChain
-  // debounce,
-  // wait
 } = require('../common')
-// const constants = require('../constants')
 const config = require('../config')
 const db = require('../db')
 
@@ -27,43 +22,10 @@ const logger = debug('ws')
 debug.enable('ws')
 
 const MIN_BATCH_SIZE = 1000
-// const DAYS = argv.days || 3
 const queue = new PQueue({ concurrency: 1 })
 let frontiersQueue = {}
 let blocksQueue = []
 
-// TODO - disabled for now
-/* let queueAccount = constants.BURN_ACCOUNT
- * const searchAccounts = async () => {
- *   logger(`idle - searching for accounts to update starting at: ${queueAccount}`)
- *   const { accounts } = await getLedger({
- *     account: queueAccount,
- *     count: 100,
- *     sorting: true,
- *     threshold: 0,
- *     modified_since: dayjs().subtract(DAYS, 'days').unix()
- *   })
- *
- *   const addresses = Object.keys(accounts)
- *   const nextAddress = addresses[addresses.length - 1]
- *
- *   if (!accounts || addresses.length === 1 || nextAddress === queueAccount) {
- *     queueAccount = constants.BURN_ACCOUNT
- *     await wait(60000)
- *     return
- *   }
- *
- *   queueAccount = nextAddress
- *
- *   logger(`found ${addresses.length} accounts to process`)
- *
- *   for (const address of addresses) {
- *     queue.add(() => processFrontiers(address))
- *   }
- * }
- *
- * queue.on('idle', debounce(searchAccounts, 60000, true))
- *  */
 const processFrontiers = async (account) => {
   logger(`processing account ${account}`)
 
