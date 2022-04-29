@@ -103,7 +103,7 @@ const processAccountBlocks = async (account) => {
   logger(`finished processing blocks for ${account}`)
 }
 
-const main = async ({ hours, threshold, includeBlocks } = {}) => {
+const main = async ({ hours, threshold = 0, includeBlocks } = {}) => {
   const { count } = await getFrontierCount()
   logger(`Frontier Count: ${count}`)
 
