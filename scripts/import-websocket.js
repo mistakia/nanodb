@@ -184,10 +184,7 @@ ws.onopen = () => {
   logger('connected')
   const subscription = {
     action: 'subscribe',
-    topic: 'confirmation',
-    options: {
-      confirmation_type: 'active_quorum'
-    }
+    topic: 'confirmation'
   }
   ws.send(JSON.stringify(subscription))
 

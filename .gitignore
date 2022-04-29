@@ -10,5 +10,6 @@ yarn-error.log
 
 # App specific
 #
+*.log
 config.json
 *.parquet
