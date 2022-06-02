@@ -28,7 +28,8 @@ add_block = (
     "%(local_timestamp)s, %(confirmed)s, %(type)s, %(account)s, %(previous)s,"
     "%(representative)s, %(link)s, %(link_account)s, %(signature)s, %(work)s,"
     "%(subtype)s) ON DUPLICATE KEY UPDATE amount=amount, balance=balance, height=height,"
-    "account=account, previous=previous, representative=representative, link=link,"
+    "local_timestamp=local_timestamp, confirmed=confirmed, type=type, account=account,"
+    "previous=previous, representative=representative, link=link,"
     "link_account=link_account, signature=signature, work=work, subtype=subtype"
 )
 
