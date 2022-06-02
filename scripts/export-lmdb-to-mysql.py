@@ -35,9 +35,11 @@ add_block = (
 add_account = (
     "INSERT INTO accounts "
     "(account, frontier, open_block, representative_block, balance, modified_timestamp,"
-    "block_count, confirmation_height, confirmation_height_frontier) VALUES (%s, %s, %s, %s,"
-    "%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE frontier=frontier, open_block=open_block,"
-    "representative_block=representative_block, balance=balance,"
+    "block_count, confirmation_height, confirmation_height_frontier) VALUES (%(account)s,"
+    "%(frontier)s, %(open_block)s, %(representative_block)s, %(balance)s,"
+    "%(modified_timestamp)s, %(block_count)s, %(confirmation_height)s,"
+    "%(confirmation_height_frontier)s) ON DUPLICATE KEY UPDATE frontier=frontier,"
+    "open_block=open_block, representative_block=representative_block, balance=balance,"
     "modified_timestamp=modified_timestamp, block_count=block_count,"
     "confirmation_height=confirmation_height,"
     "confirmation_height_frontier=confirmation_height_frontier"
@@ -184,39 +186,43 @@ try:
                     end="\r",
                 )
 
-                confirmation_value = txn.get(
-                    account_key.account, default=None, db=confirmation_db
-                )
-                confirmation_valstream = KaitaiStream(io.BytesIO(confirmation_value))
-                height_info = Nanodb.ConfirmationHeightValue(
-                    confirmation_valstream, None, Nanodb(None)
-                )
-
-                data_account = (
-                    # account
-                    nanolib.accounts.get_account_id(
+                data_account = {
+                    "account": nanolib.accounts.get_account_id(
                         prefix=nanolib.AccountIDPrefix.NANO,
                         public_key=account_key.account.hex(),
                     ),
-                    # frontier
-                    account_info.head.hex().upper(),
-                    # open_block
-                    account_info.open_block.hex().upper(),
-                    # representative_block
-                    None,
-                    # balance
-                    balance,
-                    # #modified_timestamp
-                    datetime.datetime.utcfromtimestamp(account_info.modified).strftime(
-                        "%s"
+                    "frontier": account_info.head.hex().upper(),
+                    "open_block": account_info.open_block.hex().upper(),
+                    "representative": nanolib.accounts.get_account_id(
+                        prefix=nanolib.AccountIDPrefix.NANO,
+                        public_key=account_info.representative.hex(),
                     ),
-                    # block_count
-                    account_info.block_count,
-                    # confirmation_height
-                    height_info.height,
-                    # confirmation_height_frontier
-                    height_info.frontier.hex().upper(),
-                )
+                    "representative_block": None,  # TODO
+                    "balance": balance,
+                    "modified_timestamp": datetime.datetime.utcfromtimestamp(
+                        account_info.modified
+                    ).strftime("%s"),
+                    "block_count": account_info.block_count,
+                    "confirmation_height": None,
+                    "confirmation_height_frontier": None,
+                }
+
+                try:
+                    confirmation_value = txn.get(
+                        account_key.account, default=None, db=confirmation_db
+                    )
+                    confirmation_valstream = KaitaiStream(
+                        io.BytesIO(confirmation_value)
+                    )
+                    height_info = Nanodb.ConfirmationHeightValue(
+                        confirmation_valstream, None, Nanodb(None)
+                    )
+                    data_account["confirmation_height"] = height_info.height
+                    data_account[
+                        "confirmation_height_frontier"
+                    ] = height_info.frontier.hex().upper()
+                except Exception as ex:
+                    print(ex)
 
                 tmp.append(data_account)
                 count += 1
