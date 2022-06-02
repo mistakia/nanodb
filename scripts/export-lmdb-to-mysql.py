@@ -371,11 +371,21 @@ try:
                             linked_block_value = Nanodb.BlocksValue(
                                 linked_block_valstream, None, Nanodb(None)
                             )
+                            ltype = linked_block_value.block_type
+                            if ltype == Nanodb.EnumBlocktype.send:
+                                linked_account = (
+                                    linked_block_value.block_value.sideband.account
+                                )
+                            else:
+                                linked_account = (
+                                    linked_block_value.block_value.block.account
+                                )
+
                             data_block[
                                 "link_account"
                             ] = nanolib.accounts.get_account_id(
                                 prefix=nanolib.AccountIDPrefix.NANO,
-                                public_key=block.block_value.block.account.hex(),
+                                public_key=linked_account.hex(),
                             )
                         except Exception as ex:
                             print(ex)
@@ -402,9 +412,19 @@ try:
                         linked_block_value = Nanodb.BlocksValue(
                             linked_block_valstream, None, Nanodb(None)
                         )
+                        ltype = linked_block_value.block_type
+                        if ltype == Nanodb.EnumBlocktype.send:
+                            linked_account = (
+                                linked_block_value.block_value.sideband.account
+                            )
+                        else:
+                            linked_account = (
+                                linked_block_value.block_value.block.account
+                            )
+
                         data_block["link_account"] = nanolib.accounts.get_account_id(
                             prefix=nanolib.AccountIDPrefix.NANO,
-                            public_key=block.block_value.block.account.hex(),
+                            public_key=linked_account.hex(),
                         )
                     except Exception as ex:
                         print(ex)
