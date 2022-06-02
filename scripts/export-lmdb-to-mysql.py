@@ -210,11 +210,11 @@ try:
                     datetime.datetime.utcfromtimestamp(account_info.modified).strftime(
                         "%s"
                     ),
-                    # #block_count
+                    # block_count
                     account_info.block_count,
-                    # #confirmation_height
+                    # confirmation_height
                     height_info.height,
-                    # #confirmation_height_frontier
+                    # confirmation_height_frontier
                     height_info.frontier.hex().upper(),
                 )
 
@@ -341,8 +341,42 @@ try:
 
                 if btype == Nanodb.EnumBlocktype.state:
                     data_block["link"] = block.block_value.block.link.hex().upper()
-                    data_block["link_account"] = None
-                    # TODO
+
+                    if data_block["subtype"] == 4:  # change
+                        data_block["link_account"] = nanolib.accounts.get_account_id(
+                            prefix=nanolib.AccountIDPrefix.NANO,
+                            public_key=block.block_value.block.representative.hex(),
+                        )
+                    elif data_block["subtype"] == 3:  # send
+                        data_block["link_account"] = nanolib.accounts.get_account_id(
+                            prefix=nanolib.AccountIDPrefix.NANO,
+                            public_key=block.block_value.block.link.hex(),
+                        )
+                    elif (
+                        data_block["subtype"] == 2 or data_block["subtype"] == 1
+                    ):  # receive or open
+                        try:
+                            linked_block = txn.get(
+                                block.block_value.block.link, default=None, db=blocks_db
+                            )
+                            linked_block_valstream = KaitaiStream(
+                                io.BytesIO(linked_block)
+                            )
+                            linked_block_value = Nanodb.BlocksValue(
+                                linked_block_valstream, None, Nanodb(None)
+                            )
+                            data_block[
+                                "link_account"
+                            ] = nanolib.accounts.get_account_id(
+                                prefix=nanolib.AccountIDPrefix.NANO,
+                                public_key=block.block_value.block.account.hex(),
+                            )
+                        except Exception as ex:
+                            print(ex)
+                            data_block["link_account"] = None
+                    else:
+                        data_block["link_account"] = None
+
                 elif btype == Nanodb.EnumBlocktype.send:
                     data_block[
                         "link"
@@ -353,8 +387,23 @@ try:
                     )
                 elif btype == Nanodb.EnumBlocktype.receive:
                     data_block["link"] = block.block_value.block.source.hex().upper()
-                    data_block["link_account"] = None
-                    # TODO - use link hash to get account
+
+                    try:
+                        linked_block = txn.get(
+                            block.block_value.block.source, default=None, db=blocks_db
+                        )
+                        linked_block_valstream = KaitaiStream(io.BytesIO(linked_block))
+                        linked_block_value = Nanodb.BlocksValue(
+                            linked_block_valstream, None, Nanodb(None)
+                        )
+                        data_block["link_account"] = nanolib.accounts.get_account_id(
+                            prefix=nanolib.AccountIDPrefix.NANO,
+                            public_key=block.block_value.block.account.hex(),
+                        )
+                    except Exception as ex:
+                        print(ex)
+                        data_block["link_account"] = None
+
                 else:
                     data_block["link"] = None
                     data_block["link_account"] = None
