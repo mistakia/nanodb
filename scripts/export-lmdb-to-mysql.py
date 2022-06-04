@@ -493,10 +493,14 @@ try:
                     mem_cache2.append(tmp)
                     tmp = []
                 if count % 500000 == 0:
-                    Parallel(n_jobs=num_cores)(
-                        delayed(processBlocks)(data_blocks)
-                        for data_blocks in mem_cache2
-                    )
+                    try:
+                        Parallel(n_jobs=num_cores)(
+                            delayed(processBlocks)(data_blocks)
+                            for data_blocks in mem_cache2
+                        )
+                    except Exception as ex:
+                        print(ex)
+
                     mem_cache2 = []
 
             cursor.close()
