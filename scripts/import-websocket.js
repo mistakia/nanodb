@@ -223,6 +223,8 @@ const scan_accounts = async () => {
   const addressCount = addresses.length
   logger(`${addressCount} accounts returned`)
 
+  let stale_count = 0
+
   for (const address in accounts) {
     const result = await db('blocks')
       .count('* as blockCount')
@@ -233,11 +235,9 @@ const scan_accounts = async () => {
 
     const { blockCount } = result[0]
     const height = Number(accounts[address].block_count)
-    logger(
-      `found ${blockCount} blocks for account ${address} with height ${height}`
-    )
 
     if (blockCount < height) {
+      stale_count += 1
       account_update_queue.add(() =>
         update_account({
           account: address,
@@ -248,10 +248,14 @@ const scan_accounts = async () => {
     }
   }
 
+  logger(`found ${stale_count} stale accounts to update`)
+
   scan_index += batchSize
   scan_cursor_account = addresses[addressCount - 1]
 
   if (addressCount !== batchSize) {
+    logger('scan complete, resetting cursor')
+
     // reached the end, reset cursor
     scan_index = 0
     scan_cursor_account = constants.BURN_ACCOUNT
