@@ -3,6 +3,7 @@ const { default: PQueue } = require('p-queue')
 const WS = require('ws')
 const debug = require('debug')
 const nanocurrency = require('nanocurrency')
+const constants = require('../constants')
 // const yargs = require('yargs/yargs')
 // const { hideBin } = require('yargs/helpers')
 
@@ -13,6 +14,7 @@ const {
   getBlocksInfo,
   formatBlockInfo,
   formatAccountInfo,
+  getLedger,
   getChain
 } = require('../common')
 const config = require('../config')
@@ -22,37 +24,14 @@ const logger = debug('ws')
 debug.enable('ws')
 
 const MIN_BATCH_SIZE = 1000
-const queue = new PQueue({ concurrency: 1 })
-let frontiersQueue = {}
-let blocksQueue = []
+const account_check_queue = new PQueue({ concurrency: 1 })
+const account_update_queue = new PQueue({ concurrency: 1 })
+let frontiers_queue = {}
+let blocks_queue = []
 
-const processFrontiers = async (account) => {
-  logger(`processing account ${account}`)
-
-  const accountInfo = await getAccountInfo({ account })
-  if (accountInfo.error) return
-
-  const key = nanocurrency.derivePublicKey(account)
-  db('accounts')
-    .insert({
-      key,
-      account,
-      ...formatAccountInfo(accountInfo)
-    })
-    .onConflict()
-    .merge()
-
-  const result = await db('blocks').count('* as blockCount').where({ account })
-  if (!result.length) {
-    return
-  }
-
-  let { blockCount } = result[0]
+const update_account = async ({ account, accountInfo, blockCount }) => {
   let cursor = accountInfo.frontier
-  const height = parseInt(accountInfo.block_count, 10)
-  logger(
-    `found ${blockCount} blocks for account ${account} with height ${height}`
-  )
+  const height = Number(accountInfo.block_count)
 
   while (blockCount < height) {
     logger(
@@ -84,12 +63,47 @@ const processFrontiers = async (account) => {
   logger(`finished processing blocks for ${account}`)
 }
 
-const upsertBlocks = async () => {
-  const hashes = [...blocksQueue]
+/* const check_account = async (account) => {
+ *   logger(`processing account ${account}`)
+ *
+ *   const accountInfo = await getAccountInfo({ account })
+ *   if (accountInfo.error) return
+ *
+ *   const key = nanocurrency.derivePublicKey(account)
+ *   db('accounts')
+ *     .insert({
+ *       key,
+ *       account,
+ *       ...formatAccountInfo(accountInfo)
+ *     })
+ *     .onConflict()
+ *     .merge()
+ *
+ *   const result = await db('blocks').count('* as blockCount').where({ account })
+ *   if (!result.length) {
+ *     return
+ *   }
+ *
+ *   const { blockCount } = result[0]
+ *   const height = parseInt(accountInfo.block_count, 10)
+ *   logger(
+ *     `found ${blockCount} blocks for account ${account} with height ${height}`
+ *   )
+ *
+ *   if (blockCount < height) {
+ *     account_update_queue.add(() =>
+ *       update_account({ account, accountInfo, blockCount })
+ *     )
+ *   }
+ * }
+ *  */
+
+const save_blocks = async () => {
+  const hashes = [...blocks_queue]
   logger(`processing ${hashes.length} blocks`)
 
   // clear blocks queue
-  blocksQueue = []
+  blocks_queue = []
 
   // get blocks via rpc
   const res = await getBlocksInfo({ hashes })
@@ -104,15 +118,15 @@ const upsertBlocks = async () => {
     await db('blocks').insert(blockInserts).onConflict().merge()
   }
 
-  setTimeout(upsertBlocks, 20000)
+  setTimeout(save_blocks, 20000)
 }
 
-const upsertFrontiers = async () => {
-  const accounts = Object.keys(frontiersQueue)
+const save_frontiers = async () => {
+  const accounts = Object.keys(frontiers_queue)
   logger(`processing ${accounts.length} accounts`)
 
   // clear frontiers queue
-  frontiersQueue = {}
+  frontiers_queue = {}
 
   const accountInserts = []
   for (const account of accounts) {
@@ -131,7 +145,7 @@ const upsertFrontiers = async () => {
     await db('accounts').insert(accountInserts).onConflict().merge()
   }
 
-  setTimeout(upsertFrontiers, 60000)
+  setTimeout(save_frontiers, 60000)
 }
 
 const ws = new ReconnectingWebSocket(config.websocketAddress, [], {
@@ -150,8 +164,8 @@ ws.onopen = () => {
   }
   ws.send(JSON.stringify(subscription))
 
-  setTimeout(upsertBlocks, 20000)
-  setTimeout(upsertFrontiers, 60000)
+  setTimeout(save_blocks, 20000)
+  setTimeout(save_frontiers, 60000)
 }
 
 ws.onclose = () => {
@@ -169,15 +183,82 @@ ws.onmessage = (msg) => {
   if (topic === 'confirmation') {
     logger(`received block: ${hash}`)
 
-    // queue for block upsert
-    blocksQueue.push(hash)
+    // queue block for saving
+    blocks_queue.push(hash)
 
-    // queue for frontier upsert
-    frontiersQueue[account] = true
+    // queue frontier for saving
+    frontiers_queue[account] = true
 
-    // queue for processor
-    if (queue.size < 1000) {
-      queue.add(() => processFrontiers(account))
+    if (account_check_queue.size < 1000) {
+      // TODO - ignore accounts recently checked
+      // account_check_queue.add(() => check_account(account))
     }
   }
 }
+
+// scan accounts to find ones with missing blocks in database
+let scan_cursor_account = constants.BURN_ACCOUNT
+let scan_index = 0
+const scan_accounts = async () => {
+  // scan accounts later if queue is full
+  if (account_update_queue.size > 1000) {
+    setTimeout(scan_accounts, 20000)
+    return
+  }
+
+  const batchSize = 5000
+  const opts = { count: batchSize }
+  logger(
+    `Scanning accounts from ${scan_index} to ${
+      scan_index + batchSize
+    } (${scan_cursor_account})`
+  )
+
+  const { accounts } = await getLedger({
+    ...opts,
+    account: scan_cursor_account
+  })
+
+  const addresses = Object.keys(accounts)
+  const addressCount = addresses.length
+  logger(`${addressCount} accounts returned`)
+
+  for (const address in accounts) {
+    const result = await db('blocks')
+      .count('* as blockCount')
+      .where({ account: address })
+    if (!result.length) {
+      continue
+    }
+
+    const { blockCount } = result[0]
+    const height = Number(accounts[address].block_count)
+    logger(
+      `found ${blockCount} blocks for account ${address} with height ${height}`
+    )
+
+    if (blockCount < height) {
+      account_update_queue.add(() =>
+        update_account({
+          account: address,
+          accountInfo: accounts[address],
+          blockCount
+        })
+      )
+    }
+  }
+
+  scan_index += batchSize
+  scan_cursor_account = addresses[addressCount - 1]
+
+  if (addressCount !== batchSize) {
+    // reached the end, reset cursor
+    scan_index = 0
+    scan_cursor_account = constants.BURN_ACCOUNT
+  }
+
+  setTimeout(scan_accounts, 5000)
+}
+
+// initiate initial scan
+scan_accounts()

@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "NODE_ENV=development node server",
-    "lint": "standard .",
+    "lint": "eslint . --ext js,mjs",
     "prettier": "prettier --write ."
   },
   "dependencies": {
@@ -28,7 +28,15 @@
     "yargs": "^16.2.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.17.10",
+    "@babel/eslint-parser": "^7.17.0",
     "prettier": "^2.2.1",
-    "standard": "^16.0.3"
+    "eslint": "8.15.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "6.0.0",
+    "eslint-plugin-react": "7.29.4"
   }
 }
