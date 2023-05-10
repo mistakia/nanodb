@@ -25,14 +25,15 @@ const importAccountBlocks = async (account) => {
 
   if (accountInfo.error) return
 
-  const batchSize = 5000
+  const blocks_batch_size = 2000
   let blockCount = 0
+  let failed_attempts = 0
   let height = accountInfo.confirmed_height
   let cursor = accountInfo.confirmed_frontier
   do {
     logger(`Fetching blocks from height: ${height} (${account})`)
 
-    const chain = await getChain({ block: cursor, count: batchSize })
+    const chain = await getChain({ block: cursor, count: blocks_batch_size })
     const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
 
     const blockInserts = []
@@ -43,25 +44,35 @@ const importAccountBlocks = async (account) => {
 
     if (blockInserts.length) {
       logger(`saving ${blockInserts.length} blocks`)
-      await db('blocks').insert(blockInserts).onConflict('hash').merge()
+      try {
+        await db('blocks').insert(blockInserts).onConflict('hash').merge()
+        failed_attempts = 0
+      } catch (err) {
+        logger(err)
+        logger(`failed to save blocks for ${account} at height ${height}`)
+        failed_attempts += 1
+        if (failed_attempts > 1) {
+          logger('two consecutive failed attempts, exiting')
+          return
+        }
+      }
     }
 
     blockCount = chain.blocks.length
     cursor = chain.blocks[chain.blocks.length - 1]
-    height = height - batchSize
-  } while (blockCount === batchSize)
+    height = height - blocks_batch_size
+  } while (blockCount === blocks_batch_size && failed_attempts < 2)
 
   logger(`finished processing blocks for ${account}`)
 }
 
-const main = async ({ hours, threshold }) => {
-  const batchSize = 5000
+const main = async ({ hours, threshold, account = constants.BURN_ACCOUNT }) => {
+  const accounts_batch_size = 5000
   let index = 0
   let addressCount = 0
-  let account = constants.BURN_ACCOUNT
 
   const opts = {
-    count: batchSize,
+    count: accounts_batch_size,
     threshold
   }
 
@@ -71,7 +82,9 @@ const main = async ({ hours, threshold }) => {
 
   do {
     logger(
-      `Fetching accounts from ${index} to ${index + batchSize} (${account})`
+      `Fetching accounts from ${index} to ${
+        index + accounts_batch_size
+      } (${account})`
     )
 
     const { accounts } = await getLedger({
@@ -99,9 +112,9 @@ const main = async ({ hours, threshold }) => {
       await importAccountBlocks(account)
     }
 
-    index += batchSize
+    index += accounts_batch_size
     account = addresses[addressCount - 1]
-  } while (addressCount === batchSize)
+  } while (addressCount === accounts_batch_size)
 
   process.exit()
 }
@@ -115,9 +128,11 @@ if (!module.parent) {
 
   const init = async () => {
     try {
-      const hours = argv.hours
-      const threshold = argv.threshold
-      await main({ hours, threshold, includeBlocks: argv.blocks })
+      await main({
+        hours: argv.hours,
+        threshold: argv.threshold,
+        account: argv.account
+      })
     } catch (err) {
       console.log(err)
     }
