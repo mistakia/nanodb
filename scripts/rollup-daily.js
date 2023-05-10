@@ -159,7 +159,7 @@ const main = async () => {
       insert[`${key}_total`] = amountRangeTotals[i].toFixed()
     }
 
-    await db('rollup_daily').insert(insert).onConflict().merge()
+    await db('rollup_daily').insert(insert).onConflict('timestamp').merge()
 
     logger(`processed ${time.format('MM/DD/YYYY')}`)
 

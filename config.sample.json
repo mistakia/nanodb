@@ -28,12 +28,12 @@
     }
   },
   "postgresql": {
-    "client": "postgresql",
+    "client": "pg",
     "connection": {
       "host": "localhost",
       "user": "root",
       "password": "xxxxx",
-      "dbname": "nanodb_development",
+      "database": "nanodb_development",
       "port": "5432"
     }
   },

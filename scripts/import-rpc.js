@@ -35,7 +35,7 @@ const MIN_BATCH_SIZE = 1000
  *
  *   if (blockInserts.length) {
  *     logger(`saving ${blockInserts.length} blocks`)
- *     await db('blocks').insert(blockInserts).onConflict().merge()
+ *     await db('blocks').insert(blockInserts).onConflict('hash').merge()
  *   }
  *
  *   queue = []
@@ -58,7 +58,7 @@ const processAccountBlocks = async (account) => {
       account,
       ...formatAccountInfo(accountInfo)
     })
-    .onConflict()
+    .onConflict('account')
     .merge()
 
   const result = await db('blocks').count('* as blockCount').where({ account })
@@ -90,7 +90,7 @@ const processAccountBlocks = async (account) => {
 
     if (blockInserts.length) {
       logger(`saving ${blockInserts.length} blocks`)
-      await db('blocks').insert(blockInserts).onConflict().merge()
+      await db('blocks').insert(blockInserts).onConflict('hash').merge()
     }
 
     // update count
@@ -145,7 +145,7 @@ const main = async ({ hours, threshold = 0, includeBlocks } = {}) => {
         ...accountInfo
       })
     }
-    await db('accounts').insert(accountInserts).onConflict().merge()
+    await db('accounts').insert(accountInserts).onConflict('account').merge()
 
     if (includeBlocks) {
       for (const account of Object.keys(accounts)) {

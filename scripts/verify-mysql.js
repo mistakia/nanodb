@@ -24,7 +24,7 @@ const verifyBlock = async (hash) => {
     }
     const b = await getBlocksInfo({ hashes: [hash] })
     block = { hash, ...formatBlockInfo(b) }
-    await db('blocks').insert(block).onConflict().merge()
+    await db('blocks').insert(block).onConflict('hash').merge()
   }
 
   if (!block.previous) {

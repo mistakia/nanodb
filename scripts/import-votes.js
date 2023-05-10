@@ -24,7 +24,10 @@ const save = async () => {
 
   const inserts = votes
   votes = []
-  await db('votes').insert(inserts).onConflict().ignore()
+  await db('votes')
+    .insert(inserts)
+    .onConflict(['account', 'hash', 'vote_timestamp'])
+    .ignore()
   logger(`saved ${inserts.length} votes`)
 }
 

@@ -50,7 +50,7 @@ const update_account = async ({ account, accountInfo, blockCount }) => {
 
     if (blockInserts.length) {
       logger(`saving ${blockInserts.length} blocks`)
-      await db('blocks').insert(blockInserts).onConflict().merge()
+      await db('blocks').insert(blockInserts).onConflict('hash').merge()
     }
 
     // update count
@@ -76,7 +76,7 @@ const update_account = async ({ account, accountInfo, blockCount }) => {
  *       account,
  *       ...formatAccountInfo(accountInfo)
  *     })
- *     .onConflict()
+ *     .onConflict('account')
  *     .merge()
  *
  *   const result = await db('blocks').count('* as blockCount').where({ account })
@@ -115,7 +115,7 @@ const save_blocks = async () => {
 
   if (blockInserts.length) {
     logger(`saving ${blockInserts.length} blocks`)
-    await db('blocks').insert(blockInserts).onConflict().merge()
+    await db('blocks').insert(blockInserts).onConflict('hash').merge()
   }
 
   setTimeout(save_blocks, 20000)
@@ -142,7 +142,7 @@ const save_frontiers = async () => {
 
   if (accountInserts.length) {
     logger(`saving ${accountInserts.length} accounts`)
-    await db('accounts').insert(accountInserts).onConflict().merge()
+    await db('accounts').insert(accountInserts).onConflict('account').merge()
   }
 
   setTimeout(save_frontiers, 60000)

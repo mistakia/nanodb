@@ -43,7 +43,7 @@ const importAccountBlocks = async (account) => {
 
     if (blockInserts.length) {
       logger(`saving ${blockInserts.length} blocks`)
-      await db('blocks').insert(blockInserts).onConflict().merge()
+      await db('blocks').insert(blockInserts).onConflict('hash').merge()
     }
 
     blockCount = chain.blocks.length
@@ -93,7 +93,7 @@ const main = async ({ hours, threshold }) => {
         ...accountInfo
       })
     }
-    await db('accounts').insert(accountInserts).onConflict().merge()
+    await db('accounts').insert(accountInserts).onConflict('account').merge()
 
     for (const account of Object.keys(accounts)) {
       await importAccountBlocks(account)
