@@ -18,7 +18,7 @@ const {
 const logger = debug('rpc')
 debug.enable('rpc')
 
-const MIN_BATCH_SIZE = 1000
+const BLOCKS_BATCH_SIZE = 1000
 
 /* let queue = []
  * const processQueue = async () => {
@@ -61,24 +61,24 @@ const processAccountBlocks = async (account) => {
     .onConflict('account')
     .merge()
 
-  const result = await db('blocks').count('* as blockCount').where({ account })
+  const result = await db('blocks')
+    .count('* as imported_block_count')
+    .where({ account })
   if (!result.length) {
     return
   }
 
-  let { blockCount } = result[0]
+  let { imported_block_count } = result[0]
   let cursor = accountInfo.frontier
+  let failed_attempts = 0
   const height = parseInt(accountInfo.confirmed_height, 10)
-  logger(
-    `found ${blockCount} blocks for account ${account} with height ${height}`
-  )
 
-  while (blockCount < height) {
+  while (imported_block_count < height && failed_attempts < 2) {
     logger(
-      `account height: ${height}, current count: ${blockCount}, cursor: ${cursor}`
+      `account ${account}, height: ${height}, imported count: ${imported_block_count}, cursor: ${cursor}`
     )
-    const batchSize = Math.min(accountInfo.block_count, MIN_BATCH_SIZE)
-    const chain = await getChain({ block: cursor, count: batchSize })
+    const batch_size = Math.min(accountInfo.block_count, BLOCKS_BATCH_SIZE)
+    const chain = await getChain({ block: cursor, count: batch_size })
     cursor = chain.blocks[chain.blocks.length - 1]
     const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
 
@@ -90,30 +90,49 @@ const processAccountBlocks = async (account) => {
 
     if (blockInserts.length) {
       logger(`saving ${blockInserts.length} blocks`)
-      await db('blocks').insert(blockInserts).onConflict('hash').merge()
+      try {
+        await db('blocks').insert(blockInserts).onConflict('hash').merge()
+        failed_attempts = 0
+      } catch (err) {
+        logger(err)
+        logger(
+          `failed to save blocks for account ${account} at height ${height}`
+        )
+        failed_attempts += 1
+        if (failed_attempts > 1) {
+          logger('consecutive failed attempts, exiting')
+          process.exit()
+        }
+      }
     }
 
     // update count
     const result = await db('blocks')
-      .count('* as blockCount')
+      .count('* as imported_block_count')
       .where({ account })
-    blockCount = result[0].blockCount
+    imported_block_count = result[0].imported_block_count
   }
 
   logger(`finished processing blocks for ${account}`)
+
+  return failed_attempts
 }
 
-const main = async ({ hours, threshold = 0, includeBlocks } = {}) => {
+const main = async ({
+  hours,
+  threshold = 0,
+  include_blocks,
+  account = constants.BURN_ACCOUNT
+} = {}) => {
   const { count } = await getFrontierCount()
   logger(`Frontier Count: ${count}`)
 
-  const batchSize = 5000
+  const accounts_batch_size = 5000
   let index = 0
-  let addressCount = 0
-  let account = constants.BURN_ACCOUNT
+  let returned_address_count = 0
 
   const opts = {
-    count: batchSize,
+    count: accounts_batch_size,
     threshold
   }
 
@@ -123,7 +142,9 @@ const main = async ({ hours, threshold = 0, includeBlocks } = {}) => {
 
   do {
     logger(
-      `Fetching accounts from ${index} to ${index + batchSize} (${account})`
+      `Fetching accounts from ${index} to ${
+        index + accounts_batch_size
+      } (${account})`
     )
 
     const { accounts } = await getLedger({
@@ -132,8 +153,8 @@ const main = async ({ hours, threshold = 0, includeBlocks } = {}) => {
     })
 
     const addresses = Object.keys(accounts)
-    addressCount = addresses.length
-    logger(`${addressCount} accounts returned`)
+    returned_address_count = addresses.length
+    logger(`${returned_address_count} accounts returned`)
 
     const accountInserts = []
     for (const address in accounts) {
@@ -147,15 +168,15 @@ const main = async ({ hours, threshold = 0, includeBlocks } = {}) => {
     }
     await db('accounts').insert(accountInserts).onConflict('account').merge()
 
-    if (includeBlocks) {
+    if (include_blocks) {
       for (const account of Object.keys(accounts)) {
         await processAccountBlocks(account)
       }
     }
 
-    index += batchSize
-    account = addresses[addressCount - 1]
-  } while (addressCount === batchSize)
+    index += accounts_batch_size
+    account = addresses[returned_address_count - 1]
+  } while (returned_address_count === accounts_batch_size)
 
   process.exit()
 }
@@ -169,9 +190,12 @@ if (!module.parent) {
 
   const init = async () => {
     try {
-      const hours = argv.hours
-      const threshold = argv.threshold
-      await main({ hours, threshold, includeBlocks: argv.blocks })
+      await main({
+        hours: argv.hours,
+        threshold: argv.threshold,
+        include_blocks: argv.blocks,
+        account: argv.account
+      })
     } catch (err) {
       console.log(err)
     }
