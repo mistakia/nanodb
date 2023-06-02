@@ -147,7 +147,8 @@ const main = async ({
   include_blocks,
   account = constants.BURN_ACCOUNT,
   all_blocks = false,
-  delay = 0
+  delay = 0,
+  skip = false
 } = {}) => {
   const { count } = await getFrontierCount()
   logger(`Frontier Count: ${count}`)
@@ -194,7 +195,8 @@ const main = async ({
     await db('accounts').insert(accountInserts).onConflict('account').merge()
 
     if (include_blocks) {
-      for (const account of Object.keys(accounts)) {
+      const account_keys = Object.keys(accounts)
+      for (const account of skip ? account_keys.slice(1) : account_keys) {
         await processAccountBlocks({ account, all_blocks, delay })
       }
     }
@@ -221,7 +223,8 @@ if (!module.parent) {
         include_blocks: argv.blocks,
         account: argv.account,
         all_blocks: argv.all_blocks,
-        delay: argv.delay
+        delay: argv.delay,
+        skip: argv.skip
       })
     } catch (err) {
       console.log(err)
