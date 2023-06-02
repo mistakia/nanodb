@@ -2,8 +2,14 @@ const express = require('express')
 const router = express.Router()
 
 router.get('/?', async (req, res) => {
-  const { logger, db } = req.app.locals
+  const { logger, db, cache } = req.app.locals
   try {
+    const cache_key = '/api/status'
+    const cached = cache.get(cache_key)
+    if (cached) {
+      return res.status(200).send(cached)
+    }
+
     const accounts = await db('accounts').count('* as accounts')
     const blocks = await db('blocks').count('* as blocks')
 
@@ -13,6 +19,7 @@ router.get('/?', async (req, res) => {
     }
 
     res.status(200).send(data)
+    cache.set(cache_key, data, 3600)
   } catch (error) {
     logger(error)
     res.status(500).send({ error: error.toString() })

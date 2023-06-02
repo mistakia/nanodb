@@ -50,7 +50,7 @@ api.use(
     credentials: true
   })
 )
-
+api.use('/api/ping', (req, res) => res.status(200).send({ pong: true }))
 api.use('/api/status', routes.status)
 api.use('/api/ledger', routes.ledger)
 api.use('/api/accounts', routes.accounts)
