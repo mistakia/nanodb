@@ -4,5 +4,13 @@ module.exports = {
   jsxBracketSameLine: true,
   semi: false,
   singleQuote: true,
-  trailingComma: 'none'
+  trailingComma: 'none',
+  overrides: [
+    {
+      files: '*.postgre.sql',
+      options: {
+        language: 'postgresql'
+      }
+    }
+  ]
 }

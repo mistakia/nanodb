@@ -106,18 +106,16 @@ const main = async () => {
         const timestamp = timestampsIterator.next().value
         if (frontierTimestamp.isAfter(timestamp)) {
           lastActiveRangeCounters[t] += 1
-          lastActiveRangeTotals[t] = lastActiveRangeTotals[t].plus(
-            frontierBalance
-          )
+          lastActiveRangeTotals[t] =
+            lastActiveRangeTotals[t].plus(frontierBalance)
           break
         }
       }
 
       if (t === timestamps.size) {
         lastActiveBottomRangeCounter += 1
-        lastActiveBottomRangeTotal = lastActiveBottomRangeTotal.plus(
-          frontierBalance
-        )
+        lastActiveBottomRangeTotal =
+          lastActiveBottomRangeTotal.plus(frontierBalance)
       }
     }
 
