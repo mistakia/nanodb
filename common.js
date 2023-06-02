@@ -161,7 +161,7 @@ const formatBlockInfo = ({
   local_timestamp,
   confirmed: confirmed === 'true',
   account: contents.account || block_account,
-  previous: contents.previous,
+  previous: contents.previous || null,
   representative: contents.representative,
   link: contents.link || contents.destination || contents.source,
   link_account:
@@ -174,7 +174,7 @@ const formatBlockInfo = ({
   signature: contents.signature,
   work: contents.work,
   type: constants.blockType[contents.type],
-  subtype: constants.blockSubType[subtype]
+  subtype: constants.blockSubType[subtype] || null
 })
 /* eslint-enable camelcase */
 

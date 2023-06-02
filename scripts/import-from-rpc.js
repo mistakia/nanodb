@@ -108,7 +108,15 @@ const processAccountBlocks = async ({
           `INSERT INTO blocks (amount, balance, height, local_timestamp, confirmed, account, previous, representative, link, link_account, signature, work, type, subtype, hash) VALUES ${blockInserts
             .map(
               (block) =>
-                `(${block.amount}, ${block.balance}, ${block.height}, ${block.local_timestamp}, ${block.confirmed}, '${block.account}', '${block.previous}', '${block.representative}', '${block.link}', '${block.link_account}', '${block.signature}', '${block.work}', '${block.type}', '${block.subtype}', '${block.hash}')`
+                `(${block.amount}, ${block.balance}, ${block.height}, ${
+                  block.local_timestamp
+                }, ${block.confirmed}, '${block.account}', ${
+                  block.previous ? `'${block.previous}'` : null
+                }, '${block.representative}', '${block.link}', '${
+                  block.link_account
+                }', '${block.signature}', '${block.work}', '${block.type}', ${
+                  block.subtype ? `'${block.subtype}'` : null
+                }, '${block.hash}')`
             )
             .join(', ')}
             ON CONFLICT (hash) DO UPDATE SET local_timestamp = LEAST(blocks.local_timestamp, EXCLUDED.local_timestamp), confirmed = EXCLUDED.confirmed, height = EXCLUDED.height, amount = EXCLUDED.amount, balance = EXCLUDED.balance, previous = EXCLUDED.previous, representative = EXCLUDED.representative, link = EXCLUDED.link, link_account = EXCLUDED.link_account, signature = EXCLUDED.signature, work = EXCLUDED.work, type = EXCLUDED.type, subtype = EXCLUDED.subtype`
