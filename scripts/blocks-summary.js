@@ -154,7 +154,7 @@ const main = async ({ hours, threshold }) => {
   process.exit()
 }
 
-module.exprots = main
+module.exports = main
 
 if (!module.parent) {
   const yargs = require('yargs/yargs')

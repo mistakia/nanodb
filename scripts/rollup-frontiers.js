@@ -146,7 +146,7 @@ const main = async () => {
   logger(`${time.format('DD/MM/YYYY')}`, insert)
 }
 
-module.exprots = main
+module.exports = main
 
 if (!module.parent) {
   const init = async () => {

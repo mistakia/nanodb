@@ -167,7 +167,7 @@ const main = async () => {
   } while (time.isAfter(end))
 }
 
-module.exprots = main
+module.exports = main
 
 if (!module.parent) {
   const init = async () => {
