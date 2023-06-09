@@ -91,12 +91,20 @@ const processAccountBlocks = async ({
     const batch_size = Math.min(accountInfo.block_count, BLOCKS_BATCH_SIZE)
     const chain = await getChain({ block: cursor, count: batch_size })
     cursor = chain.blocks[chain.blocks.length - 1]
-    const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
-
     const blockInserts = []
-    for (const hash in blocks) {
-      const block = blocks[hash]
-      blockInserts.push({ hash, ...formatBlockInfo(block) })
+
+    try {
+      const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
+      for (const hash in blocks) {
+        const block = blocks[hash]
+        blockInserts.push({ hash, ...formatBlockInfo(block) })
+      }
+    } catch (err) {
+      logger(`error getting blocks info for ${chain.blocks.length} blocks`)
+      logger(err)
+      failed_attempts++
+      await wait(1000)
+      continue
     }
 
     block_height_cursor = blockInserts[blockInserts.length - 1].height
@@ -133,11 +141,13 @@ const processAccountBlocks = async ({
       }
     }
 
-    // update count
-    const result = await db('blocks')
-      .count('* as imported_block_count')
-      .where({ account })
-    imported_block_count = result[0].imported_block_count
+    if (!all_blocks) {
+      // update count
+      const result = await db('blocks')
+        .count('* as imported_block_count')
+        .where({ account })
+      imported_block_count = result[0].imported_block_count
+    }
 
     if (delay) {
       await wait(delay)
