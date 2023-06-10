@@ -46,15 +46,36 @@ const BLOCKS_BATCH_SIZE = 1000
 const processAccountBlocks = async ({
   account,
   all_blocks = false,
-  delay = 0
+  delay = 0,
+  account_info_retries = 0
 }) => {
   logger(`processing account ${account}`)
 
-  const accountInfo = await getAccountInfo({
-    account
-  })
+  let accountInfo
+  try {
+    accountInfo = await getAccountInfo({
+      account
+    })
+  } catch (err) {
+    logger(`error getting account info for ${account}`)
+    logger(err)
 
-  if (accountInfo.error) return
+    if (account_info_retries > 2) {
+      logger(`too many retries for account ${account}`)
+      throw err
+    }
+
+    await wait(3000)
+    await processAccountBlocks({
+      account,
+      all_blocks,
+      delay,
+      account_info_retries: account_info_retries + 1
+    })
+    return
+  }
+
+  if (!accountInfo || accountInfo.error) return
 
   const key = nanocurrency.derivePublicKey(account)
   db('accounts')
