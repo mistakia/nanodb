@@ -171,6 +171,7 @@ CREATE TABLE
     _000001_total numeric(39) DEFAULT 0,
     _000001_below_total numeric(39) DEFAULT 0,
     timestamp integer NOT NULL,
+    timestamp_utc timestamp without time zone NOT NULL,
     CONSTRAINT unique_rollup_daily UNIQUE (timestamp)
   );
 
@@ -194,3 +195,14 @@ CREATE INDEX total_amount ON source_destination_stats USING btree (total_amount)
 CREATE INDEX blocktype ON source_destination_stats USING btree (blocktype);
 
 CREATE INDEX block_count ON source_destination_stats USING btree (block_count);
+
+DROP TABLE IF EXISTS historical_price;
+
+CREATE TABLE
+  historical_price (
+    source character varying(10) NOT NULL,
+    timestamp_utc timestamp without time zone NOT NULL,
+    price numeric(39, 18) NOT NULL,
+    volume numeric(39, 2) NOT NULL,
+    CONSTRAINT unique_historical_price UNIQUE (source, timestamp_utc)
+  );

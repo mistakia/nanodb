@@ -139,6 +139,7 @@ const main = async () => {
 
     const insert = {
       timestamp: time.unix(),
+      timestamp_utc: time.format('YYYY-MM-DD HH:mm:ss'),
       active_addresses: Object.keys(addresses).length,
       blocks: blocks.length,
       send_volume: sendVolume.toFixed(),

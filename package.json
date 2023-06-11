@@ -20,6 +20,7 @@
     "morgan-debug": "^2.0.0",
     "mysql": "^2.18.1",
     "nanocurrency": "^2.5.0",
+    "neat-csv": "^7.0.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.1",
     "p-queue": "6.6.2",
@@ -27,6 +28,10 @@
     "reconnecting-websocket": "^4.4.0",
     "ws": "^7.5.0",
     "yargs": "^16.2.0"
+  },
+  "imports": {
+    "#common": "./common.js",
+    "#db": "./db/index.js"
   },
   "devDependencies": {
     "@babel/core": "^7.17.10",

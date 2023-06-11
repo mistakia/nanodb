@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const { default: fetch, Request } = require('node-fetch')
+const { fileURLToPath } = require('url')
 
 const constants = require('./constants')
 const config = JSON.parse(
@@ -23,6 +24,7 @@ const debounce = (callback, wait, immediate = false) => {
   }
 }
 
+const isMain = (path) => process.argv[1] === fileURLToPath(path)
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const POST = (data) => ({
@@ -200,5 +202,7 @@ module.exports = {
   formatBlockInfo,
   formatAccountInfo,
   wait,
-  debounce
+  debounce,
+  isMain,
+  request
 }
