@@ -4,9 +4,7 @@ import fetch, { Request } from 'node-fetch'
 import { fileURLToPath } from 'url'
 import constants from './constants.mjs'
 
-const config = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, 'config.json'))
-)
+import config from '#config'
 
 export const debounce = (callback, wait, immediate = false) => {
   let timeout = null
