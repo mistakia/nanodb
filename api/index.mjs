@@ -11,12 +11,12 @@ import extend from 'deep-extend'
 import NodeCache from 'node-cache'
 import morgan from 'morgan-debug'
 import cors from 'cors'
-import WebSocket from 'ws'
+import { WebSocketServer } from 'ws'
 import jwt from 'jsonwebtoken'
-import expressJwt from 'express-jwt'
+import { expressjwt } from 'express-jwt'
 
 import config from '#config'
-import routes from './routes.mjs'
+import * as routes from './routes/index.mjs'
 import db from '#db'
 // import sockets from './sockets.mjs'
 
@@ -57,7 +57,7 @@ api.use('/api/accounts', routes.accounts)
 api.use('/api/blocks', routes.blocks)
 
 // protected api routes
-api.use('/api/*', expressJwt(config.jwt), (err, req, res, next) => {
+api.use('/api/*', expressjwt(config.jwt), (err, req, res, next) => {
   res.set('Expires', '0')
   res.set('Pragma', 'no-cache')
   res.set('Surrogate-Control', 'no-store')
@@ -82,7 +82,7 @@ const createServer = () => {
 }
 
 const server = createServer()
-const wss = new WebSocket.Server({ noServer: true })
+const wss = new WebSocketServer({ noServer: true })
 
 server.on('upgrade', async (request, socket, head) => {
   const parsed = new url.URL(request.url, config.url)

@@ -1,8 +1,9 @@
 import debug from 'debug'
 
-import { port } from '#config'
+import config from '#config'
 import server from '#api'
 
+const { port } = config
 const logger = debug('server')
 
 debug.enable('server')
