@@ -33,7 +33,8 @@
     "#common": "./common.mjs",
     "#db": "./db/index.mjs",
     "#constants": "./constants.mjs",
-    "#api": "./api/index.mjs"
+    "#api": "./api/index.mjs",
+    "#config": "./config.mjs"
   },
   "devDependencies": {
     "@babel/core": "^7.17.10",

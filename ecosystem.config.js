@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'nanodb-api',
-      script: 'server.mjs',
+      script: 'server.js',
       watch: './api',
       env_production: {
         NODE_ENV: 'production'
@@ -11,7 +11,7 @@ module.exports = {
     },
     {
       name: 'nanodb-sync-websocket',
-      script: 'scripts/import-websocket.mjs',
+      script: 'scripts/import-websocket.js',
       watch: '.',
       env_production: {
         NODE_ENV: 'production'
