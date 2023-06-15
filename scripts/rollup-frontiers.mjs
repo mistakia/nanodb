@@ -1,9 +1,10 @@
-const debug = require('debug')
-const dayjs = require('dayjs')
-const BigNumber = require('bignumber.js')
-const utc = require('dayjs/plugin/utc')
+import debug from 'debug'
+import dayjs from 'dayjs'
+import BigNumber from 'bignumber.js'
+import utc from 'dayjs/plugin/utc'
 
-const db = require('../db')
+import db from '#db'
+import { isMain } from '#common'
 
 dayjs.extend(utc)
 
@@ -146,9 +147,7 @@ const main = async () => {
   logger(`${time.format('DD/MM/YYYY')}`, insert)
 }
 
-module.exports = main
-
-if (!module.parent) {
+if (!isMain(import.meta.url)) {
   const init = async () => {
     try {
       await main()
@@ -165,3 +164,5 @@ if (!module.parent) {
     process.exit()
   }
 }
+
+export default main

@@ -1,10 +1,11 @@
-const yargs = require('yargs/yargs')
-const { hideBin } = require('yargs/helpers')
+import yargs from 'yargs/yargs'
+import { hideBin } from 'yargs/helpers'
+
+import { getBlocksInfo, formatBlockInfo } from '#common'
+import constants from '#constants'
+import db from '#db'
 
 const argv = yargs(hideBin(process.argv)).argv
-const { getBlocksInfo, formatBlockInfo } = require('../common')
-const constants = require('../constants')
-const db = require('../db')
 let index = 0
 let account
 const missing = []

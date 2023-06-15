@@ -1,24 +1,24 @@
-const https = require('https')
-const http = require('http')
-const fs = require('fs')
-const url = require('url')
+import https from 'https'
+import http from 'http'
+import fs from 'fs'
+import url from 'url'
 
-const express = require('express')
-const debug = require('debug')
-const compression = require('compression')
-const bodyParser = require('body-parser')
-const extend = require('deep-extend')
-const NodeCache = require('node-cache')
-const morgan = require('morgan-debug')
-const cors = require('cors')
-const WebSocket = require('ws')
-const jwt = require('jsonwebtoken')
-const expressJwt = require('express-jwt')
+import express from 'express'
+import debug from 'debug'
+import compression from 'compression'
+import bodyParser from 'body-parser'
+import extend from 'deep-extend'
+import NodeCache from 'node-cache'
+import morgan from 'morgan-debug'
+import cors from 'cors'
+import WebSocket from 'ws'
+import jwt from 'jsonwebtoken'
+import expressJwt from 'express-jwt'
 
-const config = require('../config')
-const routes = require('./routes')
-const db = require('../db')
-// const sockets = require('./sockets')
+import config from '#config'
+import routes from './routes.mjs'
+import db from '#db'
+// import sockets from './sockets.mjs'
 
 const logger = debug('api')
 
@@ -103,4 +103,4 @@ server.on('upgrade', async (request, socket, head) => {
 
 // sockets(wss)
 
-module.exports = server
+export default server

@@ -1,11 +1,12 @@
-const debug = require('debug')
-const dayjs = require('dayjs')
+import debug from 'debug'
+import dayjs from 'dayjs'
+import nanocurrency from 'nanocurrency'
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 
-const nanocurrency = require('nanocurrency')
-
-const constants = require('../constants')
-const db = require('../db')
-const {
+import constants from '#constants'
+import db from '#db'
+import {
   getFrontierCount,
   getLedger,
   getChain,
@@ -13,9 +14,11 @@ const {
   getBlocksInfo,
   formatBlockInfo,
   formatAccountInfo,
-  wait
-} = require('../common')
+  wait,
+  isMain
+} from '#common'
 
+const argv = yargs(hideBin(process.argv)).argv
 const logger = debug('rpc')
 debug.enable('rpc')
 
@@ -247,13 +250,7 @@ const main = async ({
   process.exit()
 }
 
-module.exports = main
-
-if (!module.parent) {
-  const yargs = require('yargs/yargs')
-  const { hideBin } = require('yargs/helpers')
-  const argv = yargs(hideBin(process.argv)).argv
-
+if (isMain(import.meta.url)) {
   const init = async () => {
     try {
       await main({
@@ -278,3 +275,5 @@ if (!module.parent) {
     process.exit()
   }
 }
+
+export default main

@@ -1,14 +1,14 @@
-const fs = require('fs')
-const path = require('path')
-const { default: fetch, Request } = require('node-fetch')
-const { fileURLToPath } = require('url')
+import fs from 'fs'
+import path from 'path'
+import fetch, { Request } from 'node-fetch'
+import { fileURLToPath } from 'url'
+import constants from './constants.mjs'
 
-const constants = require('./constants')
 const config = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, 'config.json'))
 )
 
-const debounce = (callback, wait, immediate = false) => {
+export const debounce = (callback, wait, immediate = false) => {
   let timeout = null
 
   return function () {
@@ -24,8 +24,8 @@ const debounce = (callback, wait, immediate = false) => {
   }
 }
 
-const isMain = (path) => process.argv[1] === fileURLToPath(path)
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+export const isMain = (path) => process.argv[1] === fileURLToPath(path)
+export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const POST = (data) => ({
   method: 'POST',
@@ -35,7 +35,7 @@ const POST = (data) => ({
   }
 })
 
-const request = async (options) => {
+export const request = async (options) => {
   const controller = new AbortController()
   const timeout = setTimeout(() => {
     controller.abort()
@@ -65,7 +65,7 @@ const rpcRequest = (data) => {
   return { url: config.rpcAddress, ...POST(data) }
 }
 
-const getFrontierCount = () => {
+export const getFrontierCount = () => {
   const data = {
     action: 'frontier_count'
   }
@@ -74,7 +74,7 @@ const getFrontierCount = () => {
 }
 
 /* eslint-disable camelcase */
-const getLedger = ({
+export const getLedger = ({
   account = constants.BURN_ACCOUNT,
   count = 1,
   threshold = 100000000000000000,
@@ -97,7 +97,7 @@ const getLedger = ({
 }
 /* eslint-enable camelcase */
 
-const getBlocksInfo = ({ hashes }) => {
+export const getBlocksInfo = ({ hashes }) => {
   const data = {
     action: 'blocks_info',
     include_not_found: true,
@@ -109,7 +109,7 @@ const getBlocksInfo = ({ hashes }) => {
   return request(options)
 }
 
-const getAccountInfo = ({ account }) => {
+export const getAccountInfo = ({ account }) => {
   const data = {
     action: 'account_info',
     account,
@@ -122,7 +122,7 @@ const getAccountInfo = ({ account }) => {
   return request(options)
 }
 
-const getChain = ({ block, count }) => {
+export const getChain = ({ block, count }) => {
   const data = {
     action: 'chain',
     block,
@@ -133,7 +133,7 @@ const getChain = ({ block, count }) => {
 }
 
 /* eslint-disable camelcase */
-const formatAccountInfo = ({
+export const formatAccountInfo = ({
   frontier,
   open_block,
   representative_block,
@@ -159,7 +159,7 @@ const formatAccountInfo = ({
   confirmation_height_frontier
 })
 
-const formatBlockInfo = ({
+export const formatBlockInfo = ({
   amount,
   balance,
   block_account,
@@ -192,17 +192,3 @@ const formatBlockInfo = ({
   subtype: constants.blockSubType[subtype] || null
 })
 /* eslint-enable camelcase */
-
-module.exports = {
-  getFrontierCount,
-  getAccountInfo,
-  getChain,
-  getLedger,
-  getBlocksInfo,
-  formatBlockInfo,
-  formatAccountInfo,
-  wait,
-  debounce,
-  isMain,
-  request
-}

@@ -1,7 +1,7 @@
-const express = require('express')
+import express from 'express'
 
-const constants = require('../../../constants')
-const send = require('./send')
+import constants from '#constants'
+import send from './send.mjs'
 
 const router = express.Router()
 
@@ -144,4 +144,4 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
 
 router.use('/send', send)
 
-module.exports = router
+export default router

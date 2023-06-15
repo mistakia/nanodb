@@ -1,25 +1,21 @@
-const ReconnectingWebSocket = require('reconnecting-websocket')
-const { default: PQueue } = require('p-queue')
-const WS = require('ws')
-const debug = require('debug')
-const nanocurrency = require('nanocurrency')
-const constants = require('../constants')
-const dayjs = require('dayjs')
-// const yargs = require('yargs/yargs')
-// const { hideBin } = require('yargs/helpers')
+import ReconnectingWebSocket from 'reconnecting-websocket'
+import PQueue from 'p-queue'
+import WS from 'ws'
+import debug from 'debug'
+import nanocurrency from 'nanocurrency'
+import dayjs from 'dayjs'
 
-// const argv = yargs(hideBin(process.argv)).argv
-
-const {
+import constants from '#constants'
+import {
   getAccountInfo,
   getBlocksInfo,
   formatBlockInfo,
   formatAccountInfo,
   getLedger,
   getChain
-} = require('../common')
-const config = require('../config')
-const db = require('../db')
+} from '#common'
+import config from '#config'
+import db from '#db'
 
 const logger = debug('ws')
 debug.enable('ws')

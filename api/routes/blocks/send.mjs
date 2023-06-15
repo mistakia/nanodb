@@ -1,14 +1,16 @@
-const express = require('express')
-const dayjs = require('dayjs')
+import express from 'express'
+import dayjs from 'dayjs'
 
-const constants = require('../../../constants')
+import constants from '#constants'
 
 const router = express.Router()
 
 router.get('/?', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
-    const maxHours = 168 // 1w
+    // TODO includeAccounts
+    // TODO excludeAccounts
+    const maxHours = 1 // TODO - fix slow query
     const hours = Math.min(
       Math.abs(parseInt(req.query.hours || 24, 10)),
       maxHours
@@ -16,8 +18,9 @@ router.get('/?', async (req, res) => {
 
     const defaultLimit = 100
     const limit = Math.min(parseInt(req.query.limit || defaultLimit, 0), 100)
+    const offset = parseInt(req.query.offset, 0) || 0
 
-    const cacheKey = `/accounts/send/${hours}`
+    const cacheKey = `/blocks/send/${hours}`
     const cacheValue = cache.get(cacheKey)
     if (cacheValue) {
       return res.status(200).send(cacheValue)
@@ -25,28 +28,23 @@ router.get('/?', async (req, res) => {
 
     const cutoff = dayjs().subtract(hours, 'hours')
 
-    const accounts = await db('blocks')
-      .select('account')
-      .count('* as block_count')
-      .sum('amount as total_amount')
-      .max('amount as max_amount')
-      .min('amount as min_amount')
+    const blocks = await db('blocks')
       .where('local_timestamp', '>', cutoff.unix())
       .whereIn('type', [constants.blockType.state, constants.blockType.send])
       .where(function () {
         this.whereNull('subtype')
         this.orWhere('subtype', constants.blockSubType.send)
       })
-      .orderBy('total_amount', 'desc')
+      .orderBy('amount', 'desc')
       .limit(limit)
-      .groupBy('account')
+      .offset(offset)
 
-    if (accounts.length) cache.set(cacheKey, accounts, 60)
-    res.status(200).send(accounts)
+    if (blocks.length) cache.set(cacheKey, blocks, 60)
+    res.status(200).send(blocks)
   } catch (error) {
     logger(error)
     res.status(500).send({ error: error.toString() })
   }
 })
 
-module.exports = router
+export default router

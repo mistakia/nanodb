@@ -1,14 +1,15 @@
-const debug = require('debug')
-const dayjs = require('dayjs')
+import debug from 'debug'
+import dayjs from 'dayjs'
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 
-/* eslint-disable no-unused-vars */
-const { getLedger } = require('../common')
-const constants = require('../constants')
-const db = require('../db')
+import { getLedger, isMain } from '#common'
+import constants from '#constants'
+import db from '#db'
 
+const argv = yargs(hideBin(process.argv)).argv
 const logger = debug('script')
 debug.enable('script')
-/* eslint-enable no-unused-vars */
 
 const main = async ({ hours, threshold }) => {
   const batchSize = 2
@@ -154,13 +155,7 @@ const main = async ({ hours, threshold }) => {
   process.exit()
 }
 
-module.exports = main
-
-if (!module.parent) {
-  const yargs = require('yargs/yargs')
-  const { hideBin } = require('yargs/helpers')
-  const argv = yargs(hideBin(process.argv)).argv
-
+if (!isMain(import.meta.url)) {
   const init = async () => {
     try {
       const hours = argv.hours
@@ -179,3 +174,5 @@ if (!module.parent) {
     process.exit()
   }
 }
+
+export default main

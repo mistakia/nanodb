@@ -1,9 +1,9 @@
-const ReconnectingWebSocket = require('reconnecting-websocket')
-const WS = require('ws')
-const debug = require('debug')
+import ReconnectingWebSocket from 'reconnecting-websocket'
+import WS from 'ws'
+import debug from 'debug'
 
-const config = require('../config')
-const db = require('../db')
+import config from '#config'
+import db from '#db'
 
 const BATCH_SIZE = 1000
 const logger = debug('ws:votes')

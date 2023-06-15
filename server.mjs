@@ -1,9 +1,11 @@
-const debug = require('debug')
+import debug from 'debug'
+
+import { port } from '#config'
+import server from '#api'
+
 const logger = debug('server')
 
 debug.enable('server')
-const server = require('./api')
-const { port } = require('./config')
 
 const main = async () => {
   server.listen(port, () => logger(`API listening on port ${port}`))
