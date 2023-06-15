@@ -1,5 +1,5 @@
 import debug from 'debug'
-import request from 'node-fetch'
+import got from 'got'
 import neat_csv from 'neat-csv'
 // import yargs from 'yargs'
 // import { hideBin } from 'yargs/helpers'
@@ -14,10 +14,9 @@ const log = debug('import-coingecko-price-history')
 debug.enable('import-coingecko-price-history')
 
 const import_coingecko_price_history = async () => {
-  const response = await request(
+  const raw_csv = await got(
     'https://www.coingecko.com/price_charts/export/756/usd.csv'
-  )
-  const raw_csv = await response.text()
+  ).text()
   const historical_csv = await neat_csv(raw_csv)
   const formatted_csv = historical_csv.map((row) => ({
     timestamp_utc: row.snapped_at,

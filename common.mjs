@@ -1,6 +1,4 @@
-import fs from 'fs'
-import path from 'path'
-import fetch, { Request } from 'node-fetch'
+import got from 'got'
 import { fileURLToPath } from 'url'
 import constants from './constants.mjs'
 
@@ -33,31 +31,13 @@ const POST = (data) => ({
   }
 })
 
-export const request = async (options) => {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => {
-    controller.abort()
-  }, 10000)
-
-  try {
-    const request = new Request(options.url, {
-      ...options,
-      signal: controller.signal
-    })
-
-    const response = await fetch(request)
-    if (response.status >= 200 && response.status < 300) {
-      return response.json()
-    } else {
-      const res = await response.json()
-      const error = new Error(res.error || response.statusText)
-      error.response = response
-      throw error
+export const request = async ({ url, ...options }) =>
+  got(url, {
+    ...options,
+    timeout: {
+      request: 10000
     }
-  } finally {
-    clearTimeout(timeout)
-  }
-}
+  }).json()
 
 const rpcRequest = (data) => {
   return { url: config.rpcAddress, ...POST(data) }
