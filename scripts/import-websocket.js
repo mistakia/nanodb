@@ -4,6 +4,7 @@ const WS = require('ws')
 const debug = require('debug')
 const nanocurrency = require('nanocurrency')
 const constants = require('../constants')
+const dayjs = require('dayjs')
 // const yargs = require('yargs/yargs')
 // const { hideBin } = require('yargs/helpers')
 
@@ -207,7 +208,6 @@ const scan_accounts = async () => {
   }
 
   const batchSize = 5000
-  const opts = { count: batchSize }
   logger(
     `Scanning accounts from ${scan_index} to ${
       scan_index + batchSize
@@ -215,7 +215,8 @@ const scan_accounts = async () => {
   )
 
   const { accounts } = await getLedger({
-    ...opts,
+    count: batchSize,
+    modified_since: dayjs().subtract(6, 'hours').unix(),
     account: scan_cursor_account
   })
 
