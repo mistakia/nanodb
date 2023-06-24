@@ -11,7 +11,10 @@ router.get('/daily', async (req, res) => {
       return res.status(200).send(cached)
     }
 
-    const data = await db('rollup_daily').orderBy('timestamp', 'desc')
+    const data = await db('rollup_daily')
+      .select('rollup_daily.*', 'historical_price.price')
+      .leftJoin('historical_price', 'rollup_daily.timestamp_utc', 'historical_price.timestamp_utc')
+      .orderBy('timestamp', 'desc')
     cache.set(cacheKey, data, 900)
     res.status(200).send(data)
   } catch (error) {
