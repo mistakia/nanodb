@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import BigNumber from 'bignumber.js'
-import utc from 'dayjs/plugin/utc'
+import utc from 'dayjs/plugin/utc.js'
 
 import constants from '#constants'
 import db from '#db'

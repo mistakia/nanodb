@@ -12,8 +12,18 @@ router.get('/daily', async (req, res) => {
     }
 
     const data = await db('rollup_daily')
-      .select('rollup_daily.*', 'historical_price.price')
-      .leftJoin('historical_price', 'rollup_daily.timestamp_utc', 'historical_price.timestamp_utc')
+      .select(
+        'rollup_daily.*',
+        'historical_price.price',
+        db.raw(
+          'rollup_daily.send_volume * POWER(10, -30) * historical_price.price as total_usd_send_value'
+        )
+      )
+      .leftJoin(
+        'historical_price',
+        'rollup_daily.timestamp_utc',
+        'historical_price.timestamp_utc'
+      )
       .orderBy('timestamp', 'desc')
     cache.set(cacheKey, data, 900)
     res.status(200).send(data)
