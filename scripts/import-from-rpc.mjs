@@ -182,20 +182,32 @@ const processAccountBlocks = async ({
 
   return failed_attempts
 }
+/**
+ * Main function to process accounts and blocks from RPC and insert into the database.
+ * @param {Object} options - The options for processing accounts and blocks.
+ * @param {number} options.hours - The number of hours to go back for modified accounts.
+ * @param {number} [options.threshold=0] - The minimum balance threshold for accounts to be processed.
+ * @param {boolean} [options.include_blocks=false] - Flag to include block processing for each account.
+ * @param {string} [options.account=constants.BURN_ACCOUNT] - The account to start processing from.
+ * @param {boolean} [options.all_blocks=false] - Flag to process all blocks for each account.
+ * @param {number} [options.delay=0] - The delay in milliseconds between processing each account.
+ * @param {number} [options.accounts_batch_size=200] - The number of accounts to process in each batch.
+ * @param {boolean} [options.skip=false] - Flag to skip the first account in the processing queue.
+ */
 
 const main = async ({
   hours,
   threshold = 0,
-  include_blocks,
+  include_blocks = false,
   account = constants.BURN_ACCOUNT,
   all_blocks = false,
   delay = 0,
-  skip = false
+  skip = false,
+  accounts_batch_size = 200
 } = {}) => {
   const { count } = await getFrontierCount()
   logger(`Frontier Count: ${count}`)
 
-  const accounts_batch_size = 5000
   let index = 0
   let returned_address_count = 0
 
@@ -260,7 +272,8 @@ if (isMain(import.meta.url)) {
         account: argv.account,
         all_blocks: argv.all_blocks,
         delay: argv.delay,
-        skip: argv.skip
+        skip: argv.skip,
+        accounts_batch_size: argv.accounts_batch_size
       })
     } catch (err) {
       console.log(err)
