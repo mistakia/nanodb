@@ -188,6 +188,7 @@ const processAccountBlocks = async ({
  * @param {number} options.hours - The number of hours to go back for modified accounts.
  * @param {number} [options.threshold=0] - The minimum balance threshold for accounts to be processed.
  * @param {boolean} [options.include_blocks=false] - Flag to include block processing for each account.
+ * @param {boolean} [options.include_account_info=false] - Flag to include account info for each account.
  * @param {string} [options.account=constants.BURN_ACCOUNT] - The account to start processing from.
  * @param {boolean} [options.all_blocks=false] - Flag to process all blocks for each account.
  * @param {number} [options.delay=0] - The delay in milliseconds between processing each account.
@@ -199,6 +200,7 @@ const main = async ({
   hours,
   threshold = 0,
   include_blocks = false,
+  include_account_info = false,
   account = constants.BURN_ACCOUNT,
   all_blocks = false,
   delay = 0,
@@ -238,8 +240,18 @@ const main = async ({
 
     const accountInserts = []
     for (const address in accounts) {
-      const accountInfo = formatAccountInfo(accounts[address])
       const key = nanocurrency.derivePublicKey(address)
+      let account_info_rpc
+      if (include_account_info && !include_blocks) {
+        try {
+          account_info_rpc = await getAccountInfo({ account: address })
+        } catch (error) {
+          logger(`Error fetching account info for ${address}: ${error}`)
+        }
+      }
+      const accountInfo = formatAccountInfo(
+        account_info_rpc || accounts[address]
+      )
       accountInserts.push({
         key,
         account: address,
@@ -269,6 +281,7 @@ if (isMain(import.meta.url)) {
         hours: argv.hours,
         threshold: argv.threshold,
         include_blocks: argv.blocks,
+        include_account_info: argv.include_account_info,
         account: argv.account,
         all_blocks: argv.all_blocks,
         delay: argv.delay,
