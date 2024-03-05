@@ -4,6 +4,8 @@ import WS from 'ws'
 import debug from 'debug'
 import nanocurrency from 'nanocurrency'
 import dayjs from 'dayjs'
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 
 import constants from '#constants'
 import {
@@ -20,7 +22,10 @@ import db from '#db'
 const logger = debug('ws')
 debug.enable('ws')
 
+const argv = yargs(hideBin(process.argv)).argv
+
 const MIN_BATCH_SIZE = 1000
+const ACCOUNTS_BATCH_SIZE = argv.accounts_batch_size || 200
 const account_check_queue = new PQueue({ concurrency: 1 })
 const account_update_queue = new PQueue({ concurrency: 1 })
 let frontiers_queue = {}
@@ -34,8 +39,8 @@ const update_account = async ({ account, accountInfo, blockCount }) => {
     logger(
       `account height: ${height}, current count: ${blockCount}, cursor: ${cursor}`
     )
-    const batchSize = Math.min(accountInfo.block_count, MIN_BATCH_SIZE)
-    const chain = await getChain({ block: cursor, count: batchSize })
+    const count = Math.min(accountInfo.block_count, MIN_BATCH_SIZE)
+    const chain = await getChain({ block: cursor, count })
     cursor = chain.blocks[chain.blocks.length - 1]
     const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
 
@@ -235,15 +240,14 @@ const scan_accounts = async () => {
     return
   }
 
-  const batchSize = 5000
   logger(
     `Scanning accounts from ${scan_index} to ${
-      scan_index + batchSize
+      scan_index + ACCOUNTS_BATCH_SIZE
     } (${scan_cursor_account})`
   )
 
   const { accounts } = await getLedger({
-    count: batchSize,
+    count: ACCOUNTS_BATCH_SIZE,
     modified_since: dayjs().subtract(6, 'hours').unix(),
     account: scan_cursor_account
   })
@@ -279,10 +283,10 @@ const scan_accounts = async () => {
 
   logger(`found ${stale_count} stale accounts to update`)
 
-  scan_index += batchSize
+  scan_index += ACCOUNTS_BATCH_SIZE
   scan_cursor_account = addresses[addressCount - 1]
 
-  if (addressCount !== batchSize) {
+  if (addressCount !== ACCOUNTS_BATCH_SIZE) {
     logger('scan complete, resetting cursor')
 
     // reached the end, reset cursor
