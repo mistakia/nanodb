@@ -1,4 +1,4 @@
-DROP TABLE accounts;
+DROP TABLE IF EXISTS accounts;
 
 CREATE TABLE
   accounts (
@@ -32,7 +32,7 @@ ADD PRIMARY KEY (account);
 
 --
 --
-DROP TABLE blocks;
+DROP TABLE IF EXISTS blocks;
 
 CREATE TABLE
   blocks (
