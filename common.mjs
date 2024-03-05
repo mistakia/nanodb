@@ -121,8 +121,8 @@ export const formatAccountInfo = ({
   representative,
   weight,
   pending,
-  confirmation_height,
-  confirmation_height_frontier
+  confirmed_height,
+  confirmed_frontier
 }) => ({
   frontier,
   open_block,
@@ -133,8 +133,8 @@ export const formatAccountInfo = ({
   representative,
   weight,
   pending,
-  confirmation_height,
-  confirmation_height_frontier
+  confirmation_height: confirmed_height,
+  confirmation_height_frontier: confirmed_frontier
 })
 
 export const formatBlockInfo = ({
