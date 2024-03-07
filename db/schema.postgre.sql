@@ -50,7 +50,13 @@ CREATE TABLE
     link_account character varying(65) DEFAULT NULL::character varying,
     signature character varying(128) DEFAULT NULL::character varying,
     work character varying(16) DEFAULT NULL::character varying,
-    subtype integer DEFAULT NULL::integer
+    subtype integer DEFAULT NULL::integer,
+    election_duration integer DEFAULT NULL::integer,
+    election_time bigint DEFAULT NULL::bigint,
+    election_tally numeric(39) DEFAULT NULL::numeric,
+    election_request_count integer DEFAULT NULL::integer,
+    election_blocks integer DEFAULT NULL::integer,
+    election_voters integer DEFAULT NULL::integer
   );
 
 CREATE INDEX blocks_account ON blocks USING btree (account);
