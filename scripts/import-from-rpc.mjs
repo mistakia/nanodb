@@ -142,7 +142,7 @@ const processAccountBlocks = async ({
               (block) =>
                 `(${block.amount}, ${block.balance}, ${block.height}, ${
                   block.local_timestamp
-                }, ${block.confirmed}, '${block.account}', ${
+                }, ${block.confirmed ? 1 : 0}, '${block.account}', ${
                   block.previous ? `'${block.previous}'` : null
                 }, '${block.representative}', '${block.link}', '${
                   block.link_account

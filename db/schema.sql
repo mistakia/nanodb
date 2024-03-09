@@ -110,7 +110,8 @@ CREATE TABLE
     INDEX `balance` (`balance`),
     INDEX `representative` (`representative`),
     INDEX `local_timestamp` (`local_timestamp`),
-    INDEX `link_account` (`link_account`)
+    INDEX `link_account` (`link_account`),
+    INDEX `confirmed` (`confirmed`)
   ) ENGINE = InnoDB;
 
 -- --------------------------------------------------------
