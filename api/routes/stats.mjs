@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
       .sum('amount')
       .first()
 
-    const median_latency_24_hours_query = db('blocks')
+    const median_latency_last_24_hours_query = db('blocks')
       .where('local_timestamp', '>=', one_day_ago)
       .where('confirmed', '=', 1)
       .whereNotNull('election_time')
@@ -78,14 +78,14 @@ router.get('/', async (req, res) => {
 
     const [
       confirmations_last_24_hours,
-      median_latency_24_hours,
+      median_latency_last_24_hours,
       median_latency_last_hour,
       median_latency_last_10_mins,
       confirmations_without_election_time_last_24_hours,
       send_volume_last_24_hours
     ] = await Promise.all([
       confirmations_last_24_hours_query,
-      median_latency_24_hours_query,
+      median_latency_last_24_hours_query,
       median_latency_last_hour_query,
       median_latency_last_10_mins_query,
       confirmations_without_election_time_last_24_hours_query,
@@ -94,8 +94,8 @@ router.get('/', async (req, res) => {
 
     const response_data = {
       confirmations_last_24_hours: Number(confirmations_last_24_hours[0].count),
-      median_latency_ms_24_hours: Number(
-        median_latency_24_hours[0].median_latency_ms
+      median_latency_ms_last_24_hours: Number(
+        median_latency_last_24_hours[0].median_latency_ms
       ),
       median_latency_ms_last_hour: Number(
         median_latency_last_hour[0].median_latency_ms
