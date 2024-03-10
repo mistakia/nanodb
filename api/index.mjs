@@ -55,6 +55,7 @@ api.use('/api/status', routes.status)
 api.use('/api/ledger', routes.ledger)
 api.use('/api/accounts', routes.accounts)
 api.use('/api/blocks', routes.blocks)
+api.use('/api/stats', routes.stats)
 
 // protected api routes
 api.use('/api/*', expressjwt(config.jwt), (err, req, res, next) => {
