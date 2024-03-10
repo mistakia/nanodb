@@ -8,7 +8,6 @@ import debug from 'debug'
 import compression from 'compression'
 import bodyParser from 'body-parser'
 import extend from 'deep-extend'
-import NodeCache from 'node-cache'
 import morgan from 'morgan-debug'
 import cors from 'cors'
 import { WebSocketServer } from 'ws'
@@ -18,6 +17,7 @@ import { expressjwt } from 'express-jwt'
 import config from '#config'
 import * as routes from './routes/index.mjs'
 import db from '#db'
+import cache from '#api/cache.mjs'
 // import sockets from './sockets.mjs'
 
 const logger = debug('api')
@@ -37,7 +37,7 @@ const api = express()
 
 api.locals.db = db
 api.locals.logger = logger
-api.locals.cache = new NodeCache({ stdTTL: 600, checkperiod: 120 })
+api.locals.cache = cache
 
 api.enable('etag')
 api.disable('x-powered-by')

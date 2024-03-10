@@ -35,7 +35,8 @@
     "#db": "./db/index.mjs",
     "#constants": "./constants.mjs",
     "#api": "./api/index.mjs",
-    "#config": "./config.mjs"
+    "#config": "./config.mjs",
+    "#api/*": "./api/*"
   },
   "devDependencies": {
     "@babel/core": "^7.17.10",
