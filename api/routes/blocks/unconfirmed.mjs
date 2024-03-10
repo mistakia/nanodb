@@ -4,8 +4,15 @@ import constants from '#constants'
 const router = express.Router()
 
 router.get('/summary', async (req, res) => {
-  const { logger, db } = req.app.locals
+  const { logger, cache, db } = req.app.locals
   try {
+    const cache_key = '/api/blocks/unconfirmed/summary'
+
+    const cached_data = await cache.get(cache_key)
+    if (cached_data) {
+      return res.status(200).send(cached_data)
+    }
+
     const unconfirmed_blocks_by_type_and_subtype = await db('blocks')
       .select('type', 'subtype')
       .count('* as count')
@@ -112,6 +119,12 @@ router.get('/summary', async (req, res) => {
           return acc
         }, {})
       })
+
+    cache.set(
+      cache_key,
+      { unconfirmed_blocks_by_bucket, unconfirmed_blocks_by_type_and_subtype },
+      300
+    )
 
     res.status(200).send({
       unconfirmed_blocks_by_bucket,
