@@ -3,14 +3,23 @@ import express from 'express'
 const router = express.Router()
 
 router.get('/summary', async (req, res) => {
-  const { logger, db } = req.app.locals
+  const { logger, cache, db } = req.app.locals
   try {
+    const cache_key = '/api/accounts/unconfirmed/summary'
+
+    const cached_data = await cache.get(cache_key)
+
+    if (cached_data) {
+      return res.status(200).send(cached_data)
+    }
+
     // number of accounts with unconfirmed blocks
     const { count: unconfirmed_accounts_count } = await db('accounts as acc')
       .count('acc.account')
       .where('acc.confirmation_height', '!=', db.raw('acc.block_count'))
       .first()
 
+    cache.set(cache_key, { unconfirmed_accounts_count }, 60 * 3)
     res.status(200).send({
       unconfirmed_accounts_count: Number(unconfirmed_accounts_count)
     })
@@ -22,7 +31,7 @@ router.get('/summary', async (req, res) => {
 
 // return a list of accounts with unconfirmed blocks
 router.get('/?', async (req, res) => {
-  const { logger, db } = req.app.locals
+  const { logger, cache, db } = req.app.locals
   try {
     const limit = Math.min(Number(req.query.limit || 100), 100)
     const offset = Number(req.query.offset) || 0
@@ -76,6 +85,13 @@ router.get('/?', async (req, res) => {
       return res.status(400).send({ error: 'Invalid sort_order parameter' })
     }
 
+    const cache_key = `/api/accounts/unconfirmed?limit=${limit}&offset=${offset}&balance_min=${balance_min}&balance_max=${balance_max}&sort_by=${sort_by}&sort_order=${sort_order}`
+
+    const cached_data = await cache.get(cache_key)
+    if (cached_data) {
+      return res.status(200).send(cached_data)
+    }
+
     // get a list of accounts where the confirmation height does not equal the block height
     // Updated to use the correct column names based on the database schema and modified to left join in case the block is missing
     const query = db('accounts as acc')
@@ -117,6 +133,7 @@ router.get('/?', async (req, res) => {
 
     const rows = await query
 
+    cache.set(cache_key, rows, 60 * 5)
     res.status(200).send(rows)
   } catch (error) {
     logger(error)
