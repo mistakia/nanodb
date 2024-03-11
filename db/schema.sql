@@ -111,7 +111,8 @@ CREATE TABLE
     INDEX `representative` (`representative`),
     INDEX `local_timestamp` (`local_timestamp`),
     INDEX `link_account` (`link_account`),
-    INDEX `confirmed` (`confirmed`)
+    INDEX `confirmed` (`confirmed`),
+    INDEX `election_time` (`election_time`)
   ) ENGINE = InnoDB;
 
 -- --------------------------------------------------------

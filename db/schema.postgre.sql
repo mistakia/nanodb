@@ -77,6 +77,8 @@ CREATE INDEX blocks_local_timestamp ON blocks USING btree (local_timestamp);
 
 CREATE INDEX blocks_confirmed ON blocks USING btree (confirmed);
 
+CREATE INDEX blocks_election_time ON blocks USING btree (election_time);
+
 ALTER TABLE blocks
 ADD PRIMARY KEY (hash);
 
