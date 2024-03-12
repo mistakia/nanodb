@@ -4,7 +4,13 @@ const router = express.Router()
 
 router.get('/summary', async (req, res) => {
   const { logger, cache, db } = req.app.locals
-  const valid_periods = ['1h', '24h', '7d', '30d']
+  const valid_periods = Array.from(
+    { length: 24 },
+    (_, i) => `${i + 1}h`
+  ).concat(
+    Array.from({ length: 60 }, (_, i) => `${i + 1}m`),
+    Array.from({ length: 30 }, (_, i) => `${i + 1}d`)
+  )
   const period = req.query.period || '24h' // Default period to 24 hours if not specified
 
   if (!valid_periods.includes(period)) {
@@ -13,27 +19,18 @@ router.get('/summary', async (req, res) => {
 
   let period_condition = ''
   let cache_ttl = 900 // Default cache TTL for 24h in seconds (15 minutes)
-  switch (period) {
-    case '1h':
-      period_condition =
-        "AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour')"
-      cache_ttl = 300 // 5 minutes
-      break
-    case '24h':
-      period_condition =
-        "AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours')"
-      // cache_ttl remains 900 (15 minutes)
-      break
-    case '7d':
-      period_condition =
-        "AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '7 days')"
-      cache_ttl = 3600 // 1 hour
-      break
-    case '30d':
-      period_condition =
-        "AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days')"
-      cache_ttl = 3600 // 1 hour
-      break
+  if (period.endsWith('h')) {
+    const hours = parseInt(period.slice(0, -1))
+    period_condition = `AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '${hours} hour')`
+    cache_ttl = hours === 1 ? 300 : 900 // 5 minutes for 1h, 15 minutes otherwise
+  } else if (period.endsWith('m')) {
+    const minutes = parseInt(period.slice(0, -1))
+    period_condition = `AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '${minutes} minute')`
+    cache_ttl = 300 // 5 minutes for any minute range
+  } else if (period.endsWith('d')) {
+    const days = parseInt(period.slice(0, -1))
+    period_condition = `AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '${days} day')`
+    cache_ttl = days === 1 ? 900 : 3600 // 15 minutes for 1d, 1 hour for more than 1 day
   }
 
   const cache_key = `/api/blocks/confirmed/summary?period=${period}`
