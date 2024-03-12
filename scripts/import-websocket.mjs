@@ -32,15 +32,15 @@ let frontiers_queue = {}
 let blocks_queue = []
 const election_info_queue = {}
 
-const update_account = async ({ account, accountInfo, blockCount }) => {
-  let cursor = accountInfo.frontier
-  const height = Number(accountInfo.block_count)
+const update_account = async ({ account, account_info, block_count }) => {
+  let cursor = account_info.frontier
+  const height = Number(account_info.block_count)
 
-  while (blockCount < height) {
+  while (block_count < height) {
     logger(
-      `account height: ${height}, current count: ${blockCount}, cursor: ${cursor}`
+      `account height: ${height}, current count: ${block_count}, cursor: ${cursor}`
     )
-    const count = Math.min(accountInfo.block_count, MIN_BATCH_SIZE)
+    const count = Math.min(account_info.block_count, MIN_BATCH_SIZE)
     const chain = await getChain({ block: cursor, count })
     cursor = chain.blocks[chain.blocks.length - 1]
     const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
@@ -74,9 +74,9 @@ const update_account = async ({ account, accountInfo, blockCount }) => {
 
     // update count
     const result = await db('blocks')
-      .count('* as blockCount')
+      .count('* as block_count')
       .where({ account })
-    blockCount = result[0].blockCount
+    block_count = result[0].block_count
   }
 
   logger(`finished processing blocks for ${account}`)
@@ -85,33 +85,33 @@ const update_account = async ({ account, accountInfo, blockCount }) => {
 /* const check_account = async (account) => {
  *   logger(`processing account ${account}`)
  *
- *   const accountInfo = await getAccountInfo({ account })
- *   if (accountInfo.error) return
+ *   const account_info = await getAccountInfo({ account })
+ *   if (account_info.error) return
  *
  *   const key = nanocurrency.derivePublicKey(account)
  *   db('accounts')
  *     .insert({
  *       key,
  *       account,
- *       ...formatAccountInfo(accountInfo)
+ *       ...formatAccountInfo(account_info)
  *     })
  *     .onConflict('account')
  *     .merge()
  *
- *   const result = await db('blocks').count('* as blockCount').where({ account })
+ *   const result = await db('blocks').count('* as block_count').where({ account })
  *   if (!result.length) {
  *     return
  *   }
  *
- *   const { blockCount } = result[0]
- *   const height = parseInt(accountInfo.block_count, 10)
+ *   const { block_count } = result[0]
+ *   const height = parseInt(account_info.block_count, 10)
  *   logger(
- *     `found ${blockCount} blocks for account ${account} with height ${height}`
+ *     `found ${block_count} blocks for account ${account} with height ${height}`
  *   )
  *
  *   if (blockCount < height) {
  *     account_update_queue.add(() =>
- *       update_account({ account, accountInfo, blockCount })
+ *       update_account({ account, account_info, block_count })
  *     )
  *   }
  * }
@@ -188,21 +188,21 @@ const save_frontiers = async () => {
   // clear frontiers queue
   frontiers_queue = {}
 
-  const accountInserts = []
+  const account_inserts = []
   for (const account of accounts) {
-    const accountInfo = await getAccountInfo({ account })
-    if (accountInfo.error) continue
+    const account_info = await getAccountInfo({ account })
+    if (account_info.error) continue
     const key = nanocurrency.derivePublicKey(account)
-    accountInserts.push({
+    account_inserts.push({
       key,
       account,
-      ...formatAccountInfo(accountInfo)
+      ...formatAccountInfo(account_info)
     })
   }
 
-  if (accountInserts.length) {
-    logger(`saving ${accountInserts.length} accounts`)
-    await db('accounts').insert(accountInserts).onConflict('account').merge()
+  if (account_inserts.length) {
+    logger(`saving ${account_inserts.length} accounts`)
+    await db('accounts').insert(account_inserts).onConflict('account').merge()
   }
 
   setTimeout(save_frontiers, 60000)
