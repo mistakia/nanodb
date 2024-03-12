@@ -268,69 +268,74 @@ let scan_index = 0
 let last_full_scan_time = dayjs().subtract(6, 'hours').unix() // Initialize with 6 hours prior
 
 const scan_accounts = async () => {
-  // scan accounts later if queue is full
-  if (account_update_queue.size > 1000) {
-    setTimeout(scan_accounts, 20000)
-    return
-  }
-
-  logger(
-    `Scanning accounts from ${scan_index} to ${
-      scan_index + ACCOUNTS_BATCH_SIZE
-    } (${scan_cursor_account})`
-  )
-
-  const modified_since_time = last_full_scan_time - 900 // 15 minutes before the last full scan
-  const { accounts } = await getLedger({
-    count: ACCOUNTS_BATCH_SIZE,
-    modified_since: modified_since_time,
-    account: scan_cursor_account
-  })
-
-  const addresses = Object.keys(accounts)
-  const addressCount = addresses.length
-  logger(`${addressCount} accounts returned`)
-
-  let stale_count = 0
-
-  for (const address in accounts) {
-    const result = await db('blocks')
-      .count('* as blockCount')
-      .where({ account: address })
-    if (!result.length) {
-      continue
+  try {
+    // scan accounts later if queue is full
+    if (account_update_queue.size > 1000) {
+      setTimeout(scan_accounts, 20000)
+      return
     }
 
-    const { blockCount } = result[0]
-    const height = Number(accounts[address].block_count)
+    logger(
+      `Scanning accounts from ${scan_index} to ${
+        scan_index + ACCOUNTS_BATCH_SIZE
+      } (${scan_cursor_account})`
+    )
 
-    if (blockCount < height) {
-      stale_count += 1
-      account_update_queue.add(() =>
-        update_account({
-          account: address,
-          accountInfo: accounts[address],
-          blockCount
-        })
-      )
+    const modified_since_time = last_full_scan_time - 900 // 15 minutes before the last full scan
+    const { accounts } = await getLedger({
+      count: ACCOUNTS_BATCH_SIZE,
+      modified_since: modified_since_time,
+      account: scan_cursor_account
+    })
+
+    const addresses = Object.keys(accounts)
+    const address_count = addresses.length
+    logger(`${address_count} accounts returned`)
+
+    let stale_count = 0
+
+    for (const address of addresses) {
+      const result = await db('blocks')
+        .count('* as block_count')
+        .where({ account: address })
+      if (!result.length) {
+        continue
+      }
+
+      const { block_count } = result[0]
+      const height = Number(accounts[address].block_count)
+
+      if (block_count < height) {
+        stale_count += 1
+        account_update_queue.add(() =>
+          update_account({
+            account: address,
+            account_info: accounts[address],
+            block_count
+          })
+        )
+      }
     }
+
+    logger(`found ${stale_count} stale accounts to update`)
+
+    scan_index += ACCOUNTS_BATCH_SIZE
+    scan_cursor_account = addresses[address_count - 1]
+
+    if (address_count !== ACCOUNTS_BATCH_SIZE) {
+      logger('scan complete, resetting cursor')
+
+      // reached the end, reset cursor and update last full scan time
+      scan_index = 0
+      scan_cursor_account = constants.BURN_ACCOUNT
+      last_full_scan_time = dayjs().unix() // Update the last full scan time to now
+    }
+
+    setTimeout(scan_accounts, 5000)
+  } catch (error) {
+    logger(`Error scanning accounts: ${error.message}`)
+    setTimeout(scan_accounts, 20000) // Retry after a delay in case of error
   }
-
-  logger(`found ${stale_count} stale accounts to update`)
-
-  scan_index += ACCOUNTS_BATCH_SIZE
-  scan_cursor_account = addresses[addressCount - 1]
-
-  if (addressCount !== ACCOUNTS_BATCH_SIZE) {
-    logger('scan complete, resetting cursor')
-
-    // reached the end, reset cursor and update last full scan time
-    scan_index = 0
-    scan_cursor_account = constants.BURN_ACCOUNT
-    last_full_scan_time = dayjs().unix() // Update the last full scan time to now
-  }
-
-  setTimeout(scan_accounts, 5000)
 }
 
 // initiate initial scan
