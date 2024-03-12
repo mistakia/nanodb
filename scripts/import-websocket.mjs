@@ -265,6 +265,8 @@ ws.onmessage = (msg) => {
 // scan accounts to find ones with missing blocks in database
 let scan_cursor_account = constants.BURN_ACCOUNT
 let scan_index = 0
+let last_full_scan_time = dayjs().subtract(6, 'hours').unix() // Initialize with 6 hours prior
+
 const scan_accounts = async () => {
   // scan accounts later if queue is full
   if (account_update_queue.size > 1000) {
@@ -278,9 +280,10 @@ const scan_accounts = async () => {
     } (${scan_cursor_account})`
   )
 
+  const modified_since_time = last_full_scan_time - 900 // 15 minutes before the last full scan
   const { accounts } = await getLedger({
     count: ACCOUNTS_BATCH_SIZE,
-    modified_since: dayjs().subtract(6, 'hours').unix(),
+    modified_since: modified_since_time,
     account: scan_cursor_account
   })
 
@@ -321,9 +324,10 @@ const scan_accounts = async () => {
   if (addressCount !== ACCOUNTS_BATCH_SIZE) {
     logger('scan complete, resetting cursor')
 
-    // reached the end, reset cursor
+    // reached the end, reset cursor and update last full scan time
     scan_index = 0
     scan_cursor_account = constants.BURN_ACCOUNT
+    last_full_scan_time = dayjs().unix() // Update the last full scan time to now
   }
 
   setTimeout(scan_accounts, 5000)
