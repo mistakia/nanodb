@@ -14,11 +14,13 @@ router.get('/summary', async (req, res) => {
     }
 
     // number of accounts with unconfirmed blocks
-    const { unconfirmed_accounts_count } = await db('blocks')
-      .count('* as unconfirmed_accounts_count')
+    const results = await db('blocks')
+      .countDistinct('account as unconfirmed_accounts_count')
       .where('confirmed', '=', 0)
-      .groupBy('account')
-      .first()
+
+    const unconfirmed_accounts_count = Number(
+      results[0].unconfirmed_accounts_count
+    )
 
     cache.set(cache_key, { unconfirmed_accounts_count }, 60 * 1)
     res.status(200).send({
