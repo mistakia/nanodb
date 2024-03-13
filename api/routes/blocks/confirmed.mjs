@@ -1,4 +1,5 @@
 import express from 'express'
+import dayjs from 'dayjs'
 
 const router = express.Router()
 
@@ -13,6 +14,8 @@ router.get('/summary', async (req, res) => {
   )
   const period = req.query.period || '24h' // Default period to 24 hours if not specified
 
+  const now = dayjs().unix()
+
   if (!valid_periods.includes(period)) {
     return res.status(400).send({ error: 'Invalid period specified' })
   }
@@ -21,15 +24,15 @@ router.get('/summary', async (req, res) => {
   let cache_ttl = 900 // Default cache TTL for 24h in seconds (15 minutes)
   if (period.endsWith('h')) {
     const hours = parseInt(period.slice(0, -1))
-    period_condition = `AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '${hours} hour')`
+    period_condition = `AND local_timestamp >= ${now - hours * 3600}`
     cache_ttl = hours === 1 ? 300 : 900 // 5 minutes for 1h, 15 minutes otherwise
   } else if (period.endsWith('m')) {
     const minutes = parseInt(period.slice(0, -1))
-    period_condition = `AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '${minutes} minute')`
+    period_condition = `AND local_timestamp >= ${now - minutes * 60}`
     cache_ttl = 300 // 5 minutes for any minute range
   } else if (period.endsWith('d')) {
     const days = parseInt(period.slice(0, -1))
-    period_condition = `AND local_timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '${days} day')`
+    period_condition = `AND local_timestamp >= ${now - days * 86400}`
     cache_ttl = days === 1 ? 900 : 3600 // 15 minutes for 1d, 1 hour for more than 1 day
   }
 
