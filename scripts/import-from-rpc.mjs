@@ -194,6 +194,7 @@ const processAccountBlocks = async ({
  * @param {number} [options.delay=0] - The delay in milliseconds between processing each account.
  * @param {number} [options.accounts_batch_size=200] - The number of accounts to process in each batch.
  * @param {boolean} [options.skip=false] - Flag to skip the first account in the processing queue.
+ * @param {string} [options.single_account] - Process just one account
  */
 
 const main = async ({
@@ -205,8 +206,15 @@ const main = async ({
   all_blocks = false,
   delay = 0,
   skip = false,
-  accounts_batch_size = 200
+  accounts_batch_size = 200,
+  single_account = false
 } = {}) => {
+  if (single_account && account) {
+    // Process a single account if the flag is provided
+    await processAccountBlocks({ account, all_blocks, delay })
+    process.exit()
+  }
+
   const { count } = await getFrontierCount()
   logger(`Frontier Count: ${count}`)
 
@@ -286,7 +294,8 @@ if (isMain(import.meta.url)) {
         all_blocks: argv.all_blocks,
         delay: argv.delay,
         skip: argv.skip,
-        accounts_batch_size: argv.accounts_batch_size
+        accounts_batch_size: argv.accounts_batch_size,
+        single_account: argv.single_account
       })
     } catch (err) {
       console.log(err)
