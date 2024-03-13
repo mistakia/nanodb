@@ -111,9 +111,9 @@ router.get('/summary', async (req, res) => {
           WHEN balance < 1329227995784915872903807060280344576 THEN 60
           ELSE 61
         END AS bucket_index,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ((election_time / 1000) - local_timestamp) * 1000) AS median_confirmation_latency,
-        MIN(((election_time / 1000) - local_timestamp) * 1000) AS min_confirmation_latency,
-        MAX(((election_time / 1000) - local_timestamp) * 1000) AS max_confirmation_latency,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (election_time - local_timestamp::bigint * 1000)) AS median_confirmation_latency,
+        MIN(election_time - local_timestamp::bigint * 1000) AS min_confirmation_latency,
+        MAX(election_time - local_timestamp::bigint * 1000) AS max_confirmation_latency,
         COUNT(*) AS confirmed_blocks_count
       FROM blocks
       WHERE confirmed = 1
