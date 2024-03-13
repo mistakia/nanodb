@@ -14,14 +14,15 @@ router.get('/summary', async (req, res) => {
     }
 
     // number of accounts with unconfirmed blocks
-    const { count: unconfirmed_accounts_count } = await db('accounts as acc')
-      .count('acc.account')
-      .where('acc.confirmation_height', '!=', db.raw('acc.block_count'))
+    const { unconfirmed_accounts_count } = await db('blocks')
+      .count('* as unconfirmed_accounts_count')
+      .where('confirmed', '=', 0)
+      .groupBy('account')
       .first()
 
-    cache.set(cache_key, { unconfirmed_accounts_count }, 60 * 3)
+    cache.set(cache_key, { unconfirmed_accounts_count }, 60 * 1)
     res.status(200).send({
-      unconfirmed_accounts_count: Number(unconfirmed_accounts_count)
+      unconfirmed_accounts_count
     })
   } catch (error) {
     logger(error)
