@@ -13,8 +13,9 @@ const calculate_stats = async () => {
   is_calculating_stats = true
 
   const now = Date.now()
-  const one_day_ago_ms = 86400000
-  const one_day_ago = Math.round((now - one_day_ago_ms) / 1000)
+  const one_day_total_ms = 86400000
+  const one_day_ago_ms = now - one_day_total_ms
+  const one_day_ago = Math.round(one_day_ago_ms / 1000)
   const one_hour_ago = Math.round((now - 3600000) / 1000)
   const ten_minutes_ago = Math.round((now - 600000) / 1000)
 
@@ -45,7 +46,7 @@ const calculate_stats = async () => {
     .whereNotNull('election_time')
     .select(
       db.raw(
-        'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ((election_time / 1000) - local_timestamp) * 1000) as median_latency_ms'
+        'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'
       )
     )
 
@@ -55,7 +56,7 @@ const calculate_stats = async () => {
     .whereNotNull('election_time')
     .select(
       db.raw(
-        'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ((election_time / 1000) - local_timestamp) * 1000) as median_latency_ms'
+        'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'
       )
     )
 
@@ -65,7 +66,7 @@ const calculate_stats = async () => {
     .whereNotNull('election_time')
     .select(
       db.raw(
-        'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ((election_time / 1000) - local_timestamp) * 1000) as median_latency_ms'
+        'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'
       )
     )
 
