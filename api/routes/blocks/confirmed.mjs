@@ -46,8 +46,8 @@ router.get('/summary', async (req, res) => {
     const confirmation_latency_ms_by_bucket = await db
       .raw(
         `
-      SELECT 
-        CASE 
+      SELECT
+        CASE
           WHEN balance < 309485009821345068724781056 THEN 0
           WHEN balance < 2630622583481433084160638976 THEN 1
           WHEN balance < 4951760157141521099596496896 THEN 2
@@ -125,7 +125,13 @@ router.get('/summary', async (req, res) => {
       )
       .then((resp) => {
         const { rows } = resp
-        const buckets = Array(62).fill({ median: 0, min: 0, max: 0, avg: 0, count: 0 }) // Initialize buckets
+        const buckets = Array(62).fill({
+          median: 0,
+          min: 0,
+          max: 0,
+          avg: 0,
+          count: 0
+        })
         rows.forEach((row) => {
           buckets[row.bucket_index] = {
             median: row.median_confirmation_latency,
