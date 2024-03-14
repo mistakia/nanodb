@@ -114,6 +114,7 @@ router.get('/summary', async (req, res) => {
         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (election_time - local_timestamp::bigint * 1000)) AS median_confirmation_latency,
         MIN(election_time - local_timestamp::bigint * 1000) AS min_confirmation_latency,
         MAX(election_time - local_timestamp::bigint * 1000) AS max_confirmation_latency,
+        AVG(election_time - local_timestamp::bigint * 1000) AS avg_confirmation_latency,
         COUNT(*) AS confirmed_blocks_count
       FROM blocks
       WHERE confirmed = 1
