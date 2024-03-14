@@ -125,12 +125,13 @@ router.get('/summary', async (req, res) => {
       )
       .then((resp) => {
         const { rows } = resp
-        const buckets = Array(62).fill({ median: 0, min: 0, max: 0, count: 0 }) // Initialize buckets
+        const buckets = Array(62).fill({ median: 0, min: 0, max: 0, avg: 0, count: 0 }) // Initialize buckets
         rows.forEach((row) => {
           buckets[row.bucket_index] = {
             median: row.median_confirmation_latency,
             min: row.min_confirmation_latency,
             max: row.max_confirmation_latency,
+            avg: row.avg_confirmation_latency,
             confirmed_blocks: row.confirmed_blocks_count
           }
         })
@@ -139,6 +140,7 @@ router.get('/summary', async (req, res) => {
             median: Number(bucket.median),
             min: Number(bucket.min),
             max: Number(bucket.max),
+            avg: Number(bucket.avg),
             confirmed_blocks: Number(bucket.confirmed_blocks)
           }
           return acc
