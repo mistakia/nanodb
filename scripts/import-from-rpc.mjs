@@ -112,10 +112,20 @@ const processAccountBlocks = async ({
     logger(
       `account ${account}, height: ${frontier_height}, imported count: ${imported_block_count}, cursor: ${cursor}`
     )
-    const batch_size = Math.min(accountInfo.block_count, BLOCKS_BATCH_SIZE)
-    const chain = await getChain({ block: cursor, count: batch_size })
-    cursor = chain.blocks[chain.blocks.length - 1]
     const blockInserts = []
+    let chain
+
+    try {
+      const batch_size = Math.min(accountInfo.block_count, BLOCKS_BATCH_SIZE)
+      chain = await getChain({ block: cursor, count: batch_size })
+      cursor = chain.blocks[chain.blocks.length - 1]
+    } catch (err) {
+      logger(`error getting blocks for account ${account}, cursor: ${cursor}`)
+      logger(err)
+      failed_attempts++
+      await wait(1000)
+      continue
+    }
 
     try {
       const { blocks } = await getBlocksInfo({ hashes: chain.blocks })
