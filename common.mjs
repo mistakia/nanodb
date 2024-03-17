@@ -4,22 +4,6 @@ import constants from './constants.mjs'
 
 import config from '#config'
 
-export const debounce = (callback, wait, immediate = false) => {
-  let timeout = null
-
-  return function () {
-    const callNow = immediate && !timeout
-    const next = () => callback.apply(this, arguments)
-
-    clearTimeout(timeout)
-    timeout = setTimeout(next, wait)
-
-    if (callNow) {
-      next()
-    }
-  }
-}
-
 export const isMain = (path) => process.argv[1] === fileURLToPath(path)
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -31,15 +15,29 @@ const POST = (data) => ({
   }
 })
 
-export const request = async ({ url, ...options }) =>
-  got(url, {
-    ...options,
-    timeout: {
-      request: 10000
-    }
-  }).json()
+const MAX_RETRIES = 6
+const RETRY_BACKOFF = 5000
 
-const rpcRequest = (data) => {
+export const rpc_request = async ({ url, retries = 0, ...options }) => {
+  try {
+    return got(url, {
+      ...options,
+      timeout: {
+        request: 10000
+      }
+    }).json()
+  } catch (error) {
+    if (retries < MAX_RETRIES) {
+      const wait_time = RETRY_BACKOFF * Math.pow(2, retries)
+      await wait(wait_time)
+      return rpc_request({ url, retries: retries + 1, ...options })
+    } else {
+      throw error
+    }
+  }
+}
+
+const rpc_request_options = (data) => {
   return { url: config.rpcAddress, ...POST(data) }
 }
 
@@ -47,8 +45,8 @@ export const getFrontierCount = () => {
   const data = {
     action: 'frontier_count'
   }
-  const options = rpcRequest(data)
-  return request(options)
+  const options = rpc_request_options(data)
+  return rpc_request(options)
 }
 
 /* eslint-disable camelcase */
@@ -70,8 +68,8 @@ export const getLedger = ({
     modified_since,
     sorting
   }
-  const options = rpcRequest(data)
-  return request(options)
+  const options = rpc_request_options(data)
+  return rpc_request(options)
 }
 /* eslint-enable camelcase */
 
@@ -83,8 +81,8 @@ export const getBlocksInfo = ({ hashes }) => {
     json_block: true,
     hashes
   }
-  const options = rpcRequest(data)
-  return request(options)
+  const options = rpc_request_options(data)
+  return rpc_request(options)
 }
 
 export const getAccountInfo = ({ account }) => {
@@ -96,8 +94,8 @@ export const getAccountInfo = ({ account }) => {
     pending: true,
     include_confirmed: true
   }
-  const options = rpcRequest(data)
-  return request(options)
+  const options = rpc_request_options(data)
+  return rpc_request(options)
 }
 
 export const getChain = ({ block, count }) => {
@@ -106,8 +104,8 @@ export const getChain = ({ block, count }) => {
     block,
     count
   }
-  const options = rpcRequest(data)
-  return request(options)
+  const options = rpc_request_options(data)
+  return rpc_request(options)
 }
 
 /* eslint-disable camelcase */
