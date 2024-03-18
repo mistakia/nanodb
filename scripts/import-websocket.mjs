@@ -130,6 +130,11 @@ const save_blocks = async () => {
   for (const hash in res.blocks) {
     const block = res.blocks[hash]
     const election_info = election_info_queue[hash] || {}
+
+    if (!election_info.time) {
+      logger(`missing election_info.time for block ${hash}`)
+    }
+
     blockInserts.push({
       hash,
       ...formatBlockInfo(block),
