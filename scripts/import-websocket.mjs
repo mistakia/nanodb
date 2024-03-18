@@ -124,6 +124,8 @@ const save_blocks = async () => {
   // clear blocks queue
   blocks_queue = []
 
+  let missing_election_time_count = 0
+
   // get blocks from rpc and join with election info from websocket
   const res = await getBlocksInfo({ hashes })
   const blockInserts = []
@@ -132,7 +134,7 @@ const save_blocks = async () => {
     const election_info = election_info_queue[hash] || {}
 
     if (!election_info.time) {
-      logger(`missing election_info.time for block ${hash}`)
+      missing_election_time_count += 1
     }
 
     blockInserts.push({
@@ -159,7 +161,9 @@ const save_blocks = async () => {
   }
 
   if (blockInserts.length) {
-    logger(`saving ${blockInserts.length} blocks with election info`)
+    logger(
+      `saving ${blockInserts.length} blocks with election info, ${missing_election_time_count} missing election time`
+    )
     await db.raw(
       `INSERT INTO blocks (amount, balance, height, local_timestamp, confirmed, account, previous, representative, link, link_account, signature, work, type, subtype, hash, election_duration, election_time, election_tally, election_request_count, election_blocks, election_voters) VALUES ${blockInserts
         .map(
