@@ -23,6 +23,7 @@ const logger = debug('rpc')
 debug.enable('rpc')
 
 const BLOCKS_BATCH_SIZE = 1000
+const RETRY_BACKOFF = 5000
 
 /* let queue = []
  * const processQueue = async () => {
@@ -63,12 +64,14 @@ const processAccountBlocks = async ({
     logger(`error getting account info for ${account}`)
     logger(err)
 
-    if (account_info_retries > 2) {
+    if (account_info_retries > 5) {
       logger(`too many retries for account ${account}`)
       throw err
     }
 
-    await wait(3000)
+    const wait_time = RETRY_BACKOFF * Math.pow(2, account_info_retries)
+    await wait(wait_time)
+
     await processAccountBlocks({
       account,
       all_blocks,
@@ -107,7 +110,7 @@ const processAccountBlocks = async ({
     (all_blocks
       ? block_height_cursor > 1
       : imported_block_count < frontier_height) &&
-    failed_attempts < 2
+    failed_attempts < 6
   ) {
     logger(
       `account ${account}, height: ${frontier_height}, imported count: ${imported_block_count}, cursor: ${cursor}`
@@ -122,8 +125,11 @@ const processAccountBlocks = async ({
     } catch (err) {
       logger(`error getting blocks for account ${account}, cursor: ${cursor}`)
       logger(err)
+
+      const wait_time = RETRY_BACKOFF * Math.pow(2, failed_attempts)
+      await wait(wait_time)
+
       failed_attempts++
-      await wait(1000)
       continue
     }
 
@@ -136,8 +142,11 @@ const processAccountBlocks = async ({
     } catch (err) {
       logger(`error getting blocks info for ${chain.blocks.length} blocks`)
       logger(err)
+
+      const wait_time = RETRY_BACKOFF * Math.pow(2, failed_attempts)
+      await wait(wait_time)
+
       failed_attempts++
-      await wait(1000)
       continue
     }
 
@@ -188,8 +197,11 @@ const processAccountBlocks = async ({
     }
   }
 
-  logger(`finished processing blocks for ${account}`)
-
+  if (failed_attempts === 6) {
+    logger(`exiting after too many failed attempts for ${account}`)
+  } else {
+    logger(`finished processing blocks for ${account}`)
+  }
   return failed_attempts
 }
 /**

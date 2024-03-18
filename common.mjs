@@ -20,10 +20,13 @@ const RETRY_BACKOFF = 5000
 
 export const rpc_request = async ({ url, retries = 0, ...options }) => {
   try {
+    if (retries > 0) {
+      console.log(`retrying ${url}, retries: ${retries}`)
+    }
     return got(url, {
       ...options,
       timeout: {
-        request: 10000
+        request: 50000
       }
     }).json()
   } catch (error) {
