@@ -118,76 +118,88 @@ const update_account = async ({ account, account_info, block_count }) => {
  *  */
 
 const save_blocks = async () => {
-  const hashes = [...blocks_queue]
-  logger(`processing ${hashes.length} blocks`)
+  let hashes = []
 
-  // clear blocks queue
-  blocks_queue = []
+  try {
+    hashes = [...blocks_queue]
+    logger(`processing ${hashes.length} blocks`)
 
-  let missing_election_time_count = 0
+    // clear blocks queue
+    blocks_queue = []
 
-  // get blocks from rpc and join with election info from websocket
-  const res = await getBlocksInfo({ hashes })
-  const blockInserts = []
-  for (const hash in res.blocks) {
-    const block = res.blocks[hash]
-    const election_info = election_info_queue[hash] || {}
+    let missing_election_time_count = 0
 
-    if (!election_info.time) {
-      missing_election_time_count += 1
+    // get blocks from rpc and join with election info from websocket
+    const res = await getBlocksInfo({ hashes })
+    const block_inserts = []
+    for (const hash in res.blocks) {
+      const block = res.blocks[hash]
+      const election_info = election_info_queue[hash] || {}
+
+      if (!election_info.time) {
+        missing_election_time_count += 1
+      }
+
+      block_inserts.push({
+        hash,
+        ...formatBlockInfo(block),
+        election_duration: election_info.duration
+          ? Number(election_info.duration)
+          : null,
+        election_time: election_info.time ? Number(election_info.time) : null,
+        election_tally: election_info.tally
+          ? Number(election_info.tally)
+          : null,
+        election_request_count: election_info.request_count
+          ? Number(election_info.request_count)
+          : null,
+        election_blocks: election_info.blocks
+          ? Number(election_info.blocks)
+          : null,
+        election_voters: election_info.voters
+          ? Number(election_info.voters)
+          : null
+      })
     }
 
-    blockInserts.push({
-      hash,
-      ...formatBlockInfo(block),
-      election_duration: election_info.duration
-        ? Number(election_info.duration)
-        : null,
-      election_time: election_info.time ? Number(election_info.time) : null,
-      election_tally: election_info.tally ? Number(election_info.tally) : null,
-      election_request_count: election_info.request_count
-        ? Number(election_info.request_count)
-        : null,
-      election_blocks: election_info.blocks
-        ? Number(election_info.blocks)
-        : null,
-      election_voters: election_info.voters
-        ? Number(election_info.voters)
-        : null
-    })
+    if (block_inserts.length) {
+      logger(
+        `saving ${block_inserts.length} blocks with election info, ${missing_election_time_count} missing election time`
+      )
+      await db.raw(
+        `INSERT INTO blocks (amount, balance, height, local_timestamp, confirmed, account, previous, representative, link, link_account, signature, work, type, subtype, hash, election_duration, election_time, election_tally, election_request_count, election_blocks, election_voters) VALUES ${block_inserts
+          .map(
+            (block) =>
+              `(${block.amount}, ${block.balance}, ${block.height}, ${
+                block.local_timestamp
+              }, ${block.confirmed ? 1 : 0}, '${block.account}', ${
+                block.previous ? `'${block.previous}'` : null
+              }, '${block.representative}', '${block.link}', '${
+                block.link_account
+              }', '${block.signature}', '${block.work}', '${block.type}', ${
+                block.subtype ? `'${block.subtype}'` : null
+              }, '${block.hash}', ${block.election_duration}, ${
+                block.election_time
+              }, ${block.election_tally}, ${block.election_request_count}, ${
+                block.election_blocks
+              }, ${block.election_voters})`
+          )
+          .join(', ')}
+          ON CONFLICT (hash) DO UPDATE SET local_timestamp = LEAST(blocks.local_timestamp, EXCLUDED.local_timestamp), confirmed = EXCLUDED.confirmed, height = EXCLUDED.height, amount = EXCLUDED.amount, balance = EXCLUDED.balance, previous = EXCLUDED.previous, representative = EXCLUDED.representative, link = EXCLUDED.link, link_account = EXCLUDED.link_account, signature = EXCLUDED.signature, work = EXCLUDED.work, type = EXCLUDED.type, subtype = EXCLUDED.subtype, election_duration = EXCLUDED.election_duration, election_time = EXCLUDED.election_time, election_tally = EXCLUDED.election_tally, election_request_count = EXCLUDED.election_request_count, election_blocks = EXCLUDED.election_blocks, election_voters = EXCLUDED.election_voters`
+      )
 
-    // remove election_info for block
-    delete election_info_queue[hash]
+      for (const hash of hashes) {
+        // remove election_info for block
+        delete election_info_queue[hash]
+      }
+    }
+  } catch (error) {
+    logger(`Error saving blocks: ${error.message}`)
+    // Re-add the hashes to the queue to try again
+    blocks_queue.push(...hashes)
+  } finally {
+    setTimeout(save_blocks, 20000)
   }
-
-  if (blockInserts.length) {
-    logger(
-      `saving ${blockInserts.length} blocks with election info, ${missing_election_time_count} missing election time`
-    )
-    await db.raw(
-      `INSERT INTO blocks (amount, balance, height, local_timestamp, confirmed, account, previous, representative, link, link_account, signature, work, type, subtype, hash, election_duration, election_time, election_tally, election_request_count, election_blocks, election_voters) VALUES ${blockInserts
-        .map(
-          (block) =>
-            `(${block.amount}, ${block.balance}, ${block.height}, ${
-              block.local_timestamp
-            }, ${block.confirmed ? 1 : 0}, '${block.account}', ${
-              block.previous ? `'${block.previous}'` : null
-            }, '${block.representative}', '${block.link}', '${
-              block.link_account
-            }', '${block.signature}', '${block.work}', '${block.type}', ${
-              block.subtype ? `'${block.subtype}'` : null
-            }, '${block.hash}', ${block.election_duration}, ${
-              block.election_time
-            }, ${block.election_tally}, ${block.election_request_count}, ${
-              block.election_blocks
-            }, ${block.election_voters})`
-        )
-        .join(', ')}
-        ON CONFLICT (hash) DO UPDATE SET local_timestamp = LEAST(blocks.local_timestamp, EXCLUDED.local_timestamp), confirmed = EXCLUDED.confirmed, height = EXCLUDED.height, amount = EXCLUDED.amount, balance = EXCLUDED.balance, previous = EXCLUDED.previous, representative = EXCLUDED.representative, link = EXCLUDED.link, link_account = EXCLUDED.link_account, signature = EXCLUDED.signature, work = EXCLUDED.work, type = EXCLUDED.type, subtype = EXCLUDED.subtype, election_duration = EXCLUDED.election_duration, election_time = EXCLUDED.election_time, election_tally = EXCLUDED.election_tally, election_request_count = EXCLUDED.election_request_count, election_blocks = EXCLUDED.election_blocks, election_voters = EXCLUDED.election_voters`
-    )
-  }
-
-  setTimeout(save_blocks, 20000)
 }
 
 const save_frontiers = async () => {
