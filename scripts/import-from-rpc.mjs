@@ -51,7 +51,8 @@ const processAccountBlocks = async ({
   account,
   all_blocks = false,
   delay = 0,
-  account_info_retries = 0
+  account_info_retries = 0,
+  start_block_hash = ''
 }) => {
   logger(`processing account ${account}`)
 
@@ -76,7 +77,8 @@ const processAccountBlocks = async ({
       account,
       all_blocks,
       delay,
-      account_info_retries: account_info_retries + 1
+      account_info_retries: account_info_retries + 1,
+      start_block_hash
     })
     return
   }
@@ -101,7 +103,7 @@ const processAccountBlocks = async ({
   }
 
   let { imported_block_count } = result[0]
-  let cursor = accountInfo.frontier
+  let cursor = start_block_hash || accountInfo.frontier
   let failed_attempts = 0
   const frontier_height = parseInt(accountInfo.confirmed_height, 10)
   let block_height_cursor = frontier_height
@@ -217,6 +219,7 @@ const processAccountBlocks = async ({
  * @param {number} [options.accounts_batch_size=200] - The number of accounts to process in each batch.
  * @param {boolean} [options.skip=false] - Flag to skip the first account in the processing queue.
  * @param {string} [options.single_account] - Process just one account
+ * @param {string} [options.start_block_hash] - The hash of the block to start processing from.
  */
 
 const main = async ({
@@ -229,11 +232,12 @@ const main = async ({
   delay = 0,
   skip = false,
   accounts_batch_size = 200,
-  single_account = false
+  single_account = false,
+  start_block_hash = ''
 } = {}) => {
   if (single_account && account) {
     // Process a single account if the flag is provided
-    await processAccountBlocks({ account, all_blocks, delay })
+    await processAccountBlocks({ account, all_blocks, delay, start_block_hash })
     process.exit()
   }
 
@@ -317,7 +321,8 @@ if (isMain(import.meta.url)) {
         delay: argv.delay,
         skip: argv.skip,
         accounts_batch_size: argv.accounts_batch_size,
-        single_account: argv.single_account
+        single_account: argv.single_account,
+        start_block_hash: argv.start_block_hash
       })
     } catch (err) {
       console.log(err)
