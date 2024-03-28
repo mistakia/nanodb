@@ -11,8 +11,8 @@ import { isMain } from '#common'
 
 dayjs.extend(utc)
 
-const firstTimestamp = '1550832660' // earliest local_timestamp in blocks table
 const argv = yargs(hideBin(process.argv)).argv
+const first_timestamp = '1550832660' // earliest local_timestamp in blocks table
 const logger = debug('calculate:blocks-per-day')
 debug.enable('calculate:blocks-per-day')
 
@@ -37,23 +37,22 @@ for (const [key, value] of amounts) {
   amounts.set(key, BigNumber(value))
 }
 
-const main = async () => {
-  let time = dayjs().utc().startOf('day')
-  const days = argv.days || 1
-  const end = argv.full
-    ? dayjs.unix(firstTimestamp)
-    : time.subtract(days, 'day')
+const main = async ({ start_date = null, days = 1, full = false }) => {
+  let time = start_date
+    ? dayjs(start_date).utc().startOf('day')
+    : dayjs().utc().startOf('day')
+  const end = full ? dayjs.unix(first_timestamp) : time.subtract(days, 'day')
 
   do {
     const blocks = await db('blocks')
       .where('local_timestamp', '>=', time.unix())
-      .where('local_timestamp', '<', time.add('1', 'day').unix())
+      .where('local_timestamp', '<', time.add(1, 'day').unix())
       .whereNot('local_timestamp', 0)
 
-    let sendVolume = BigNumber(0)
-    let changeVolume = BigNumber(0)
-    let openVolume = BigNumber(0)
-    let receiveVolume = BigNumber(0)
+    let send_volume = BigNumber(0)
+    let change_volume = BigNumber(0)
+    let open_volume = BigNumber(0)
+    let receive_volume = BigNumber(0)
     const counters = {
       send_count: 0,
       receive_count: 0,
@@ -61,78 +60,78 @@ const main = async () => {
       open_count: 0
     }
 
-    const amountRangeCounters = new Array(amounts.size).fill(0)
-    const amountRangeTotals = new Array(amounts.size).fill(BigNumber(0))
-    let amountBottomRangeCounter = 0
-    let amountBottomRangeTotal = BigNumber(0)
+    const amount_range_counters = new Array(amounts.size).fill(0)
+    const amount_range_totals = new Array(amounts.size).fill(BigNumber(0))
+    let amount_bottom_range_counter = 0
+    let amount_bottom_range_total = BigNumber(0)
 
     const addresses = {}
 
-    const processSendAmount = (blockAmount) => {
+    const process_send_amount = (block_amount) => {
       let i = 0
-      const amountsIterator = amounts.values()
+      const amounts_iterator = amounts.values()
       for (; i < amounts.size; i++) {
-        const amount = amountsIterator.next().value
-        if (blockAmount.isGreaterThanOrEqualTo(amount)) {
-          amountRangeCounters[i] += 1
-          amountRangeTotals[i] = amountRangeTotals[i].plus(blockAmount)
+        const amount = amounts_iterator.next().value
+        if (block_amount.isGreaterThanOrEqualTo(amount)) {
+          amount_range_counters[i] += 1
+          amount_range_totals[i] = amount_range_totals[i].plus(block_amount)
           break
         }
       }
 
       if (i === amounts.size) {
-        amountBottomRangeCounter += 1
-        amountBottomRangeTotal = amountBottomRangeTotal.plus(blockAmount)
+        amount_bottom_range_counter += 1
+        amount_bottom_range_total = amount_bottom_range_total.plus(block_amount)
       }
     }
 
     for (const block of blocks) {
       addresses[block.account] = true
-      const blockBalance = BigNumber(block.balance)
-      const blockAmount = BigNumber(block.amount)
+      const block_balance = BigNumber(block.balance)
+      const block_amount = BigNumber(block.amount)
 
       switch (block.type) {
         case constants.blockType.state:
           switch (block.subtype) {
             case constants.blockSubType.send:
-              sendVolume = sendVolume.plus(blockAmount)
-              processSendAmount(blockAmount)
+              send_volume = send_volume.plus(block_amount)
+              process_send_amount(block_amount)
               counters.send_count += 1
               break
 
             case constants.blockSubType.receive:
               counters.receive_count += 1
-              receiveVolume = receiveVolume.plus(blockAmount)
+              receive_volume = receive_volume.plus(block_amount)
               if (block.height === 1) {
-                openVolume = openVolume.plus(blockAmount)
+                open_volume = open_volume.plus(block_amount)
                 counters.open_count += 1
               }
               break
 
             case constants.blockSubType.change:
               counters.change_count += 1
-              changeVolume = changeVolume.plus(blockBalance)
+              change_volume = change_volume.plus(block_balance)
               break
           }
           break
 
         case constants.blockType.send:
-          sendVolume = sendVolume.plus(blockAmount)
-          processSendAmount(blockAmount)
+          send_volume = send_volume.plus(block_amount)
+          process_send_amount(block_amount)
           counters.send_count += 1
           break
 
         case constants.blockType.receive:
-          receiveVolume = receiveVolume.plus(blockAmount)
+          receive_volume = receive_volume.plus(block_amount)
           if (block.height === 1) {
-            openVolume = openVolume.plus(blockAmount)
+            open_volume = open_volume.plus(block_amount)
             counters.open_count += 1
           }
           counters.receive_count += 1
           break
 
         case constants.blockType.change:
-          changeVolume = changeVolume.plus(blockBalance)
+          change_volume = change_volume.plus(block_balance)
           counters.change_count += 1
           break
       }
@@ -143,38 +142,42 @@ const main = async () => {
       timestamp_utc: time.format('YYYY-MM-DD HH:mm:ss'),
       active_addresses: Object.keys(addresses).length,
       blocks: blocks.length,
-      send_volume: sendVolume.toFixed(),
-      change_volume: changeVolume.toFixed(),
-      open_volume: openVolume.toFixed(),
-      receive_volume: receiveVolume.toFixed(),
+      send_volume: send_volume.toFixed(),
+      change_volume: change_volume.toFixed(),
+      open_volume: open_volume.toFixed(),
+      receive_volume: receive_volume.toFixed(),
 
-      _000001_below_count: amountBottomRangeCounter,
-      _000001_below_total: amountBottomRangeTotal.toFixed(),
+      _000001_below_count: amount_bottom_range_counter,
+      _000001_below_total: amount_bottom_range_total.toFixed(),
 
       ...counters
     }
 
-    const amountsIterator = amounts.keys()
+    const amounts_iterator = amounts.keys()
     for (let i = 0; i < amounts.size; i++) {
-      const key = amountsIterator.next().value
-      insert[`${key}_count`] = amountRangeCounters[i]
-      insert[`${key}_total`] = amountRangeTotals[i].toFixed()
+      const key = amounts_iterator.next().value
+      insert[`${key}_count`] = amount_range_counters[i]
+      insert[`${key}_total`] = amount_range_totals[i].toFixed()
     }
 
     await db('rollup_daily').insert(insert).onConflict('timestamp').merge()
 
     logger(`processed ${time.format('MM/DD/YYYY')}`)
 
-    time = time.subtract('1', 'day')
+    time = time.subtract(1, 'day')
   } while (time.isAfter(end))
 }
 
 if (isMain(import.meta.url)) {
   const init = async () => {
     try {
-      await main()
+      await main({
+        start_date: argv.start_date,
+        days: argv.days,
+        full: argv.full
+      })
     } catch (err) {
-      console.log(err)
+      console.error(err)
     }
     process.exit()
   }
@@ -182,7 +185,7 @@ if (isMain(import.meta.url)) {
   try {
     init()
   } catch (err) {
-    console.log(err)
+    console.error(err)
     process.exit()
   }
 }
