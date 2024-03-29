@@ -37,11 +37,20 @@ for (const [key, value] of amounts) {
   amounts.set(key, BigNumber(value))
 }
 
-const main = async ({ start_date = null, days = 1, full = false }) => {
+const main = async ({
+  start_date = null,
+  days = 1,
+  full = false,
+  end_date = null
+}) => {
   let time = start_date
     ? dayjs(start_date).utc().startOf('day')
     : dayjs().utc().startOf('day')
-  const end = full ? dayjs.unix(first_timestamp) : time.subtract(days, 'day')
+  const end = end_date
+    ? dayjs(end_date).utc().startOf('day')
+    : full
+    ? dayjs.unix(first_timestamp)
+    : time.subtract(days, 'day')
 
   do {
     const blocks = await db('blocks')
@@ -174,7 +183,8 @@ if (isMain(import.meta.url)) {
       await main({
         start_date: argv.start_date,
         days: argv.days,
-        full: argv.full
+        full: argv.full,
+        end_date: argv.end_date
       })
     } catch (err) {
       console.error(err)
