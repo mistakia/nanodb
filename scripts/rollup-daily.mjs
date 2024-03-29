@@ -16,6 +16,8 @@ const first_timestamp = '1550832660' // earliest local_timestamp in blocks table
 const logger = debug('calculate:blocks-per-day')
 debug.enable('calculate:blocks-per-day')
 
+const BATCH_SIZE = 100000
+
 const amounts = new Map(
   Object.entries({
     _1000000: 1000000000000000000000000000000000000, // 1,000,000
@@ -37,44 +39,39 @@ for (const [key, value] of amounts) {
   amounts.set(key, BigNumber(value))
 }
 
-const main = async ({
-  start_date = null,
-  days = 1,
-  full = false,
-  end_date = null
-}) => {
-  let time = start_date
-    ? dayjs(start_date).utc().startOf('day')
-    : dayjs().utc().startOf('day')
-  const end = end_date
-    ? dayjs(end_date).utc().startOf('day')
-    : full
-    ? dayjs.unix(first_timestamp)
-    : time.subtract(days, 'day')
+const get_daily_stats = async (time) => {
+  let blocks_length = 0
+  let total_block_count = 0
+  let cursor = 0
+
+  const addresses = {}
+  let send_volume = BigNumber(0)
+  let change_volume = BigNumber(0)
+  let open_volume = BigNumber(0)
+  let receive_volume = BigNumber(0)
+  const counters = {
+    send_count: 0,
+    receive_count: 0,
+    change_count: 0,
+    open_count: 0
+  }
+
+  const amount_range_counters = new Array(amounts.size).fill(0)
+  const amount_range_totals = new Array(amounts.size).fill(BigNumber(0))
+  let amount_bottom_range_counter = 0
+  let amount_bottom_range_total = BigNumber(0)
 
   do {
     const blocks = await db('blocks')
       .where('local_timestamp', '>=', time.unix())
       .where('local_timestamp', '<', time.add(1, 'day').unix())
       .whereNot('local_timestamp', 0)
+      .limit(BATCH_SIZE)
+      .offset(cursor)
 
-    let send_volume = BigNumber(0)
-    let change_volume = BigNumber(0)
-    let open_volume = BigNumber(0)
-    let receive_volume = BigNumber(0)
-    const counters = {
-      send_count: 0,
-      receive_count: 0,
-      change_count: 0,
-      open_count: 0
-    }
-
-    const amount_range_counters = new Array(amounts.size).fill(0)
-    const amount_range_totals = new Array(amounts.size).fill(BigNumber(0))
-    let amount_bottom_range_counter = 0
-    let amount_bottom_range_total = BigNumber(0)
-
-    const addresses = {}
+    blocks_length = blocks.length
+    total_block_count += blocks_length
+    cursor += BATCH_SIZE
 
     const process_send_amount = (block_amount) => {
       let i = 0
@@ -145,29 +142,51 @@ const main = async ({
           break
       }
     }
+  } while (blocks_length === BATCH_SIZE)
 
-    const insert = {
-      timestamp: time.unix(),
-      timestamp_utc: time.format('YYYY-MM-DD HH:mm:ss'),
-      active_addresses: Object.keys(addresses).length,
-      blocks: blocks.length,
-      send_volume: send_volume.toFixed(),
-      change_volume: change_volume.toFixed(),
-      open_volume: open_volume.toFixed(),
-      receive_volume: receive_volume.toFixed(),
+  const insert = {
+    timestamp: time.unix(),
+    timestamp_utc: time.format('YYYY-MM-DD HH:mm:ss'),
+    active_addresses: Object.keys(addresses).length,
+    blocks: total_block_count,
+    send_volume: send_volume.toFixed(),
+    change_volume: change_volume.toFixed(),
+    open_volume: open_volume.toFixed(),
+    receive_volume: receive_volume.toFixed(),
 
-      _000001_below_count: amount_bottom_range_counter,
-      _000001_below_total: amount_bottom_range_total.toFixed(),
+    _000001_below_count: amount_bottom_range_counter,
+    _000001_below_total: amount_bottom_range_total.toFixed(),
 
-      ...counters
-    }
+    ...counters
+  }
 
-    const amounts_iterator = amounts.keys()
-    for (let i = 0; i < amounts.size; i++) {
-      const key = amounts_iterator.next().value
-      insert[`${key}_count`] = amount_range_counters[i]
-      insert[`${key}_total`] = amount_range_totals[i].toFixed()
-    }
+  const amounts_iterator = amounts.keys()
+  for (let i = 0; i < amounts.size; i++) {
+    const key = amounts_iterator.next().value
+    insert[`${key}_count`] = amount_range_counters[i]
+    insert[`${key}_total`] = amount_range_totals[i].toFixed()
+  }
+
+  return insert
+}
+
+const main = async ({
+  start_date = null,
+  days = 1,
+  full = false,
+  end_date = null
+}) => {
+  let time = start_date
+    ? dayjs(start_date).utc().startOf('day')
+    : dayjs().utc().startOf('day')
+  const end = end_date
+    ? dayjs(end_date).utc().startOf('day')
+    : full
+    ? dayjs.unix(first_timestamp)
+    : time.subtract(days, 'day')
+
+  do {
+    const insert = await get_daily_stats(time)
 
     await db('rollup_daily').insert(insert).onConflict('timestamp').merge()
 
