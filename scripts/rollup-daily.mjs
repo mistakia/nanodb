@@ -69,6 +69,8 @@ const get_daily_stats = async (time) => {
       .limit(BATCH_SIZE)
       .offset(cursor)
 
+    logger(`processing ${time.format('MM/DD/YYYY')}, offset ${cursor}`)
+
     blocks_length = blocks.length
     total_block_count += blocks_length
     cursor += BATCH_SIZE
