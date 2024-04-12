@@ -29,8 +29,8 @@ router.get('/?', async (req, res) => {
         db.raw(
           `
           SELECT
-            EXTRACT(EPOCH FROM DATE(to_timestamp(COALESCE(local_timestamp, 1550832660))))::INTEGER AS date_unix,
-            DATE(to_timestamp(COALESCE(local_timestamp, 1550832660))) AS date,
+            EXTRACT(EPOCH FROM DATE(to_timestamp(COALESCE(NULLIF(local_timestamp, 0), 1550832660))))::INTEGER AS date_unix,
+            DATE(to_timestamp(COALESCE(NULLIF(local_timestamp, 0), 1550832660))) AS date,
             MAX(height) AS max_height
           FROM
             blocks
