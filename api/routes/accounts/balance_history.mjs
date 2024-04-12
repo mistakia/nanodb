@@ -29,28 +29,28 @@ router.get('/?', async (req, res) => {
         db.raw(
           `
           SELECT
-            DATE(to_timestamp(local_timestamp)) AS date,
+            EXTRACT(EPOCH FROM DATE(to_timestamp(local_timestamp)))::INTEGER AS date_unix,
             MAX(local_timestamp) AS max_timestamp
           FROM
             blocks
           WHERE
             account = ?
           GROUP BY
-            date
+            DATE(to_timestamp(local_timestamp))
           `,
           [address]
         )
       )
-      .select('daily_last_transaction.date', 'b.balance')
+      .select('daily_last_transaction.date_unix', 'b.balance')
       .from('daily_last_transaction')
       .joinRaw(
         `
         JOIN blocks b ON b.local_timestamp = daily_last_transaction.max_timestamp
-        AND DATE(to_timestamp(b.local_timestamp)) = daily_last_transaction.date
+        AND EXTRACT(EPOCH FROM DATE(to_timestamp(b.local_timestamp)))::INTEGER = daily_last_transaction.date_unix
         `
       )
       .where('b.account', address)
-      .orderBy('daily_last_transaction.date', 'asc')
+      .orderBy('daily_last_transaction.date_unix', 'asc')
 
     if (data.length) {
       // 12 hours
