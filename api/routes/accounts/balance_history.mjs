@@ -29,9 +29,9 @@ router.get('/?', async (req, res) => {
         db.raw(
           `
           SELECT
-            EXTRACT(EPOCH FROM DATE(to_timestamp(local_timestamp)))::INTEGER AS date_unix,
-            DATE(to_timestamp(local_timestamp)) AS date,
-            MAX(local_timestamp) AS max_timestamp
+            EXTRACT(EPOCH FROM DATE(to_timestamp(COALESCE(local_timestamp, 1550832660))))::INTEGER AS date_unix,
+            DATE(to_timestamp(COALESCE(local_timestamp, 1550832660))) AS date,
+            MAX(height) AS max_height
           FROM
             blocks
           WHERE
@@ -50,7 +50,7 @@ router.get('/?', async (req, res) => {
       .from('daily_last_transaction')
       .joinRaw(
         `
-        JOIN blocks b ON b.local_timestamp = daily_last_transaction.max_timestamp
+        JOIN blocks b ON b.height = daily_last_transaction.max_height
         `
       )
       .where('b.account', address)
