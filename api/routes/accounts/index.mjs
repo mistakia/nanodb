@@ -3,8 +3,9 @@ import express from 'express'
 import constants from '#constants'
 import send from './send.mjs'
 import unconfirmed from './unconfirmed.mjs'
+import balance_history from './balance_history.mjs'
 
-const router = express.Router()
+const router = express.Router({ mergeParams: true })
 
 router.get('/:address/open', async (req, res) => {
   const { logger, cache, db } = req.app.locals
@@ -143,6 +144,7 @@ router.get('/:address/blocks/:type/summary', async (req, res) => {
   }
 })
 
+router.use('/:address/balance_history', balance_history)
 router.use('/send', send)
 router.use('/unconfirmed', unconfirmed)
 
