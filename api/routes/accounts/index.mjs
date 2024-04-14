@@ -7,6 +7,79 @@ import balance_history from './balance_history.mjs'
 
 const router = express.Router({ mergeParams: true })
 
+router.get('/:address/stats', async (req, res) => {
+  const { logger, cache, db } = req.app.locals
+  try {
+    const { address } = req.params
+
+    if (!address) {
+      return res.status(401).send({ error: 'missing address' })
+    }
+
+    const re = /^(nano|xrb)_[13]{1}[13456789abcdefghijkmnopqrstuwxyz]{59}$/gi
+    if (!re.test(address)) {
+      return res.status(401).send({ error: 'invalid address' })
+    }
+
+    const cache_key = `/account/${address}/stats`
+    const cache_value = cache.get(cache_key)
+    if (cache_value) {
+      return res.status(200).send(cache_value)
+    }
+
+    const query = `
+      WITH balance_timestamps AS (
+        SELECT
+          balance,
+          local_timestamp,
+          subtype,
+          RANK() OVER (ORDER BY balance DESC) AS max_balance_rank,
+          RANK() OVER (ORDER BY balance ASC) AS min_balance_rank
+        FROM
+          blocks
+        WHERE
+          account = '${address}'
+      ),
+      last_send_change AS (
+        SELECT
+          MAX(CASE WHEN (type = ${constants.blockType.send} OR (type = ${constants.blockType.state} AND subtype = ${constants.blockSubType.send})) THEN local_timestamp END) AS last_send_block_timestamp,
+          MAX(CASE WHEN (type = ${constants.blockType.change} OR (type = ${constants.blockType.state} AND subtype = ${constants.blockSubType.change})) THEN local_timestamp END) AS last_change_block_timestamp
+        FROM
+          blocks
+        WHERE
+          account = '${address}'
+      ),
+      non_epoch_max_timestamp AS (
+        SELECT
+          MAX(local_timestamp) AS max_non_epoch_timestamp
+        FROM
+          blocks
+        WHERE
+          account = '${address}' AND type != ${constants.blockType.epoch}
+      )
+      SELECT
+        MAX(balance) AS max_balance,
+        MIN(balance) AS min_balance,
+        MAX(CASE WHEN max_balance_rank = 1 THEN local_timestamp END) AS max_balance_timestamp,
+        MAX(CASE WHEN min_balance_rank = 1 THEN local_timestamp END) AS min_balance_timestamp,
+        (SELECT last_send_block_timestamp FROM last_send_change) AS last_send_block_timestamp,
+        (SELECT last_change_block_timestamp FROM last_send_change) AS last_change_block_timestamp,
+        (SELECT max_non_epoch_timestamp FROM non_epoch_max_timestamp) AS last_non_epoch_block_timestamp
+      FROM
+        balance_timestamps;
+    `
+    const result = await db.raw(query)
+    if (result.length) {
+      cache.set(cache_key, result[0], 60)
+    }
+
+    res.status(200).send(result[0])
+  } catch (error) {
+    logger(error)
+    res.status(500).send({ error: error.toString() })
+  }
+})
+
 router.get('/:address/open', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
