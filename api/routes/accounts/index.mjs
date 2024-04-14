@@ -68,12 +68,14 @@ router.get('/:address/stats', async (req, res) => {
       FROM
         balance_timestamps;
     `
-    const result = await db.raw(query)
-    if (result.length) {
-      cache.set(cache_key, result[0], 60)
+    const query_response = await db.raw(query)
+    const { rows = [] } = query_response
+    if (rows.length) {
+      cache.set(cache_key, rows[0], 60)
+      return res.status(200).send(rows[0])
     }
 
-    res.status(200).send(result[0])
+    res.status(200).send({})
   } catch (error) {
     logger(error)
     res.status(500).send({ error: error.toString() })
