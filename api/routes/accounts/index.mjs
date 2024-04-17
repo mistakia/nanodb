@@ -7,6 +7,53 @@ import balance_history from './balance_history.mjs'
 
 const router = express.Router({ mergeParams: true })
 
+router.get('/:address/blocks_per_day', async (req, res) => {
+  const { logger, cache, db } = req.app.locals
+  try {
+    const { address } = req.params
+
+    if (!address) {
+      return res.status(401).send({ error: 'missing address' })
+    }
+
+    const re = /^(nano|xrb)_[13]{1}[13456789abcdefghijkmnopqrstuwxyz]{59}$/gi
+    if (!re.test(address)) {
+      return res.status(401).send({ error: 'invalid address' })
+    }
+
+    const cache_key = `/account/${address}/blocks_per_day`
+    const cache_value = cache.get(cache_key)
+    if (cache_value) {
+      return res.status(200).send(cache_value)
+    }
+
+    const query = `
+      SELECT
+        DATE_TRUNC('day', TO_TIMESTAMP(local_timestamp)) AS day,
+        COUNT(*) AS block_count
+      FROM
+        blocks
+      WHERE
+        account = '${address}'
+      GROUP BY
+        day
+      ORDER BY
+        day ASC;
+    `
+    const query_response = await db.raw(query)
+    const { rows = [] } = query_response
+    if (rows.length) {
+      cache.set(cache_key, rows, 60)
+      return res.status(200).send(rows)
+    }
+
+    res.status(200).send([])
+  } catch (error) {
+    logger(error)
+    res.status(500).send({ error: error.toString() })
+  }
+})
+
 router.get('/:address/stats', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
