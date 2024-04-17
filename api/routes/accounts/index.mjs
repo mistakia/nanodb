@@ -29,7 +29,10 @@ router.get('/:address/blocks_per_day', async (req, res) => {
 
     const query = `
       SELECT
-        DATE_TRUNC('day', TO_TIMESTAMP(local_timestamp)) AS day,
+        CASE
+        WHEN local_timestamp IS NULL OR local_timestamp = 0 THEN NULL
+          ELSE DATE_TRUNC('day', TO_TIMESTAMP(local_timestamp))
+        END AS day,
         COUNT(*) AS block_count
       FROM
         blocks
