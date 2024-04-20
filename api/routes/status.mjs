@@ -15,8 +15,8 @@ router.get('/?', async (req, res) => {
     const blocks = await db('blocks').count('* as blocks')
 
     const data = {
-      accounts: accounts.length ? accounts[0].accounts : null,
-      blocks: blocks.length ? blocks[0].blocks : null
+      accounts: accounts.length ? Number(accounts[0].accounts) : null,
+      blocks: blocks.length ? Number(blocks[0].blocks) : null
     }
 
     res.status(200).send(data)

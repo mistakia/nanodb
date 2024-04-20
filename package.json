@@ -2,7 +2,8 @@
   "scripts": {
     "start": "NODE_ENV=development node server",
     "lint": "eslint . --ext js,mjs",
-    "prettier": "prettier --write ."
+    "prettier": "prettier --write .",
+    "test": "TZ=America/New_York NODE_ENV=test TEST=all mocha --exit"
   },
   "dependencies": {
     "bignumber.js": "^9.0.1",
@@ -41,6 +42,8 @@
   "devDependencies": {
     "@babel/core": "^7.17.10",
     "@babel/eslint-parser": "^7.17.0",
+    "chai": "4.3.7",
+    "chai-http": "4.4.0",
     "eslint": "8.42.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.26.0",
@@ -48,6 +51,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "6.1.1",
     "eslint-plugin-react": "7.32.2",
+    "mocha": "^10.4.0",
     "prettier": "^2.8.8",
     "prettier-plugin-sql": "^0.14.0"
   }
