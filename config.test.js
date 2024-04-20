@@ -27,8 +27,9 @@ module.exports = {
     client: 'pg',
     connection: {
       host: 'localhost',
-      user: 'trashman',
-      database: 'nanodb_development',
+      user: 'nanodb_test',
+      password: 'nanodb_test',
+      database: 'nanodb_test',
       port: '5432'
     }
   },
