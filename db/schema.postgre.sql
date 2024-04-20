@@ -140,6 +140,17 @@ CREATE TABLE
 
 --
 --
+DROP TABLE IF EXISTS blocks_tags;
+
+CREATE TABLE
+  blocks_tags (
+    block_hash character varying(65) NOT NULL,
+    tag character varying(65) NOT NULL,
+    CONSTRAINT unique_blocks_tags UNIQUE (block_hash, tag)
+  );
+
+--
+--
 DROP TABLE IF EXISTS rollup_daily;
 
 CREATE TABLE

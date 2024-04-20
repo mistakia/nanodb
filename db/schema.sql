@@ -130,6 +130,19 @@ CREATE TABLE
 
 -- --------------------------------------------------------
 --
+-- Table structure for table `blocks_tags`
+--
+DROP TABLE IF EXISTS `blocks_tags`;
+
+CREATE TABLE
+  `blocks_tags` (
+    `block_hash` char(64) NOT NULL,
+    `tag` char(65) NOT NULL,
+    UNIQUE KEY `block_hash` (`block_hash`, `tag`)
+  ) ENGINE = InnoDB;
+
+-- --------------------------------------------------------
+--
 -- Table structure for table `rollup_daily`
 --
 DROP TABLE IF EXISTS `rollup_daily`;
