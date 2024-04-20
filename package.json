@@ -35,7 +35,7 @@
     "#db": "./db/index.mjs",
     "#constants": "./constants.mjs",
     "#api": "./api/index.mjs",
-    "#config": "./config.mjs",
+    "#config": "./config.js",
     "#api/*": "./api/*"
   },
   "devDependencies": {

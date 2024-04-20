@@ -11,5 +11,5 @@ yarn-error.log
 # App specific
 #
 *.log
-config.mjs
 *.parquet
+config.production.js
