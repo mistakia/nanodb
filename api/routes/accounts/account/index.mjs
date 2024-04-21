@@ -5,9 +5,9 @@ import balance_history from './balance_history.mjs'
 
 const router = express.Router({ mergeParams: true })
 
-router.use('/:address/balance_history', balance_history)
+router.use('/balance_history', balance_history)
 
-router.get('/:address/blocks_per_day', async (req, res) => {
+router.get('/blocks_per_day', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
     const { address } = req.params
@@ -57,7 +57,7 @@ router.get('/:address/blocks_per_day', async (req, res) => {
   }
 })
 
-router.get('/:address/stats', async (req, res) => {
+router.get('/stats', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
     const { address } = req.params
@@ -132,7 +132,7 @@ router.get('/:address/stats', async (req, res) => {
   }
 })
 
-router.get('/:address/open', async (req, res) => {
+router.get('/open', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
     const { address } = req.params
@@ -170,7 +170,7 @@ router.get('/:address/open', async (req, res) => {
   }
 })
 
-router.get('/:address/blocks/:type/summary', async (req, res) => {
+router.get('/blocks/:type/summary', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
     const { address, type } = req.params
