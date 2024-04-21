@@ -157,7 +157,7 @@ const get_daily_stats = async (time) => {
     receive_volume: receive_volume.toFixed(),
 
     _000001_below_count: amount_bottom_range_counter,
-    _000001_below_total: amount_bottom_range_total.toFixed(),
+    _000001_below_total_amount_sent: amount_bottom_range_total.toFixed(),
 
     ...counters
   }
@@ -166,7 +166,7 @@ const get_daily_stats = async (time) => {
   for (let i = 0; i < amounts.size; i++) {
     const key = amounts_iterator.next().value
     insert[`${key}_count`] = amount_range_counters[i]
-    insert[`${key}_total`] = amount_range_totals[i].toFixed()
+    insert[`${key}_total_amount_sent`] = amount_range_totals[i].toFixed()
   }
 
   return insert
