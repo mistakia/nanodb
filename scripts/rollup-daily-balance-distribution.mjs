@@ -33,7 +33,7 @@ const rollup_daily_balance_distribution = async ({
   log(`start_date: ${start_date}, end_date: ${end_date}, full: ${full}`)
 
   do {
-    const given_date = time.format('YYYY-MM-DD')
+    const given_timestamp = time.unix()
     const balance_ranges_query = db
       .with(
         'ranked_blocks',
@@ -44,7 +44,7 @@ const rollup_daily_balance_distribution = async ({
         balance,
         rank() OVER (PARTITION BY account ORDER BY height DESC) AS rank
       FROM blocks
-      WHERE local_timestamp < EXTRACT(EPOCH FROM TIMESTAMP '${given_date}'::date)
+      WHERE local_timestamp < ${given_timestamp}
     `
         )
       )
@@ -98,6 +98,8 @@ const rollup_daily_balance_distribution = async ({
         insert_object[`${row.balance_range}_total_balance`] =
           row.total_balance_raw
       })
+
+      delete insert_object._zero_total_balance
 
       await db('rollup_daily')
         .insert(insert_object)
