@@ -205,8 +205,6 @@ CREATE TABLE
     _000001_total_balance numeric(39) DEFAULT 0,
     _000001_below_total_balance numeric(39) DEFAULT 0,
     _1000000_account_count integer DEFAULT 0,
-    _1000000_account_count integer DEFAULT 0,
-    _100000_account_count integer DEFAULT 0,
     _100000_account_count integer DEFAULT 0,
     _10000_account_count integer DEFAULT 0,
     _1000_account_count integer DEFAULT 0,
@@ -219,6 +217,7 @@ CREATE TABLE
     _00001_account_count integer DEFAULT 0,
     _000001_account_count integer DEFAULT 0,
     _000001_below_account_count integer DEFAULT 0,
+    _zero_account_count integer DEFAULT 0,
     timestamp integer NOT NULL,
     timestamp_utc timestamp without time zone NOT NULL,
     CONSTRAINT unique_rollup_daily UNIQUE (timestamp)

@@ -211,6 +211,7 @@ CREATE TABLE
     `_00001_account_count` int (11) DEFAULT 0,
     `_000001_account_count` int (11) DEFAULT 0,
     `_000001_below_account_count` int (11) DEFAULT 0,
+    `_zero_account_count` int (11) DEFAULT 0,
     `timestamp` int (11) DEFAULT NULL,
     `timestamp_utc` datetime DEFAULT NULL,
     UNIQUE KEY `timestamp` (`timestamp`)
