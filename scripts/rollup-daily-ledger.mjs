@@ -16,6 +16,93 @@ debug.enable('rollup-daily-balance-distribution')
 
 const first_timestamp = '1550832660' // earliest local_timestamp in blocks table
 
+class BigMap {
+  constructor(iterable) {
+    if (iterable)
+      throw new Error("haven't implemented construction with iterable yet")
+    this._maps = [new Map()]
+    this._perMapSizeLimit = 10000000
+    this.size = 0
+  }
+
+  has(key) {
+    for (const map of this._maps) {
+      if (map.has(key)) return true
+    }
+    return false
+  }
+
+  get(key) {
+    for (const map of this._maps) {
+      if (map.has(key)) return map.get(key)
+    }
+    return undefined
+  }
+
+  set(key, value) {
+    for (const map of this._maps) {
+      if (map.has(key)) {
+        map.set(key, value)
+        return this
+      }
+    }
+    let map = this._maps[this._maps.length - 1]
+    if (map.size > this._perMapSizeLimit) {
+      map = new Map()
+      this._maps.push(map)
+    }
+    map.set(key, value)
+    this.size++
+    return this
+  }
+
+  entries() {
+    let mapIndex = 0
+    let entries = this._maps[mapIndex].entries()
+    return {
+      next: () => {
+        const n = entries.next()
+        if (n.done) {
+          if (this._maps[++mapIndex]) {
+            entries = this._maps[mapIndex].entries()
+            return entries.next()
+          } else {
+            return { done: true }
+          }
+        } else {
+          return n
+        }
+      }
+    }
+  }
+
+  [Symbol.iterator]() {
+    return this.entries()
+  }
+
+  delete(key) {
+    throw new Error("haven't implemented this yet")
+  }
+
+  keys() {
+    throw new Error("haven't implemented this yet")
+  }
+
+  values() {
+    throw new Error("haven't implemented this yet")
+  }
+
+  forEach(fn) {
+    for (const map of this._maps) {
+      map.forEach(fn)
+    }
+  }
+
+  clear() {
+    throw new Error("haven't implemented this yet")
+  }
+}
+
 const get_daily_stats = ({ account_frontiers_cache, time }) => {
   const balance_ranges = new Map(
     Object.entries({
@@ -145,7 +232,7 @@ const rollup_daily_balance_distribution = async ({
     .from('latest_balances')
     .leftJoin('account_tags', 'account_tags.account', 'latest_balances.account')
 
-  const account_frontiers_cache = new Map()
+  const account_frontiers_cache = new BigMap()
   account_frontiers.forEach((frontier) => {
     account_frontiers_cache.set(frontier.account, frontier)
   })
