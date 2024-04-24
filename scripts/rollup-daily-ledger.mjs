@@ -202,7 +202,12 @@ const rollup_daily_balance_distribution = async ({
 
     // update account_frontiers
     daily_account_state_changes.forEach((change) => {
-      account_frontiers_cache.set(change.account, change)
+      if (change && change.account) {
+        account_frontiers_cache.set(change.account, change)
+      } else {
+        log('Invalid account state change:', change)
+        throw new Error('Invalid account state change')
+      }
     })
 
     log(`calculating daily stats for ${account_frontiers_cache.size} accounts`)
