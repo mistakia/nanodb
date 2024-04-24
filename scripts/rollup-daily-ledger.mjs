@@ -16,7 +16,7 @@ debug.enable('rollup-daily-balance-distribution')
 
 const first_timestamp = '1550832660' // earliest local_timestamp in blocks table
 
-const get_daily_stats = ({ account_frontiers, time }) => {
+const get_daily_stats = ({ account_frontiers_cache, time }) => {
   const balance_ranges = new Map(
     Object.entries({
       _1000000: new BigNumber(1e39),
@@ -46,7 +46,7 @@ const get_daily_stats = ({ account_frontiers, time }) => {
   account_counts._zero_account_count = 0
   total_balances._zero_total_balance = new BigNumber(0)
 
-  for (const account_frontier of account_frontiers) {
+  account_frontiers_cache.forEach((account_frontier) => {
     const { balance } = account_frontier
     let balance_range_key = new BigNumber(balance).isZero()
       ? '_zero'
@@ -64,7 +64,7 @@ const get_daily_stats = ({ account_frontiers, time }) => {
     account_counts[`${balance_range_key}_account_count`]++
     total_balances[`${balance_range_key}_total_balance`] =
       total_balances[`${balance_range_key}_total_balance`].plus(balance)
-  }
+  })
 
   const result = {
     timestamp: time.unix(),
@@ -72,7 +72,7 @@ const get_daily_stats = ({ account_frontiers, time }) => {
     ...account_counts
   }
 
-  Object.keys(total_balances).forEach(key => {
+  Object.keys(total_balances).forEach((key) => {
     result[key] = total_balances[key].toNumber()
   })
   delete result._zero_total_balance
@@ -145,9 +145,9 @@ const rollup_daily_balance_distribution = async ({
     .from('latest_balances')
     .leftJoin('account_tags', 'account_tags.account', 'latest_balances.account')
 
-  const account_frontiers_cache = {}
+  const account_frontiers_cache = new Map()
   account_frontiers.forEach((frontier) => {
-    account_frontiers_cache[frontier.account] = frontier
+    account_frontiers_cache.set(frontier.account, frontier)
   })
 
   log(`account_frontiers: ${account_frontiers.length}`)
@@ -198,14 +198,18 @@ const rollup_daily_balance_distribution = async ({
         'latest_daily_balances.account'
       )
 
+    log(`daily_account_state_changes: ${daily_account_state_changes.length}`)
+
     // update account_frontiers
     daily_account_state_changes.forEach((change) => {
-      account_frontiers_cache[change.account] = change
+      account_frontiers_cache.set(change.account, change)
     })
+
+    log(`calculating daily stats for ${account_frontiers_cache.size} accounts`)
 
     // generate daily stats
     const daily_stats = get_daily_stats({
-      account_frontiers: Object.values(account_frontiers_cache),
+      account_frontiers_cache,
       time
     })
 
