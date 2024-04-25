@@ -104,45 +104,40 @@ class BigMap {
 }
 
 const get_daily_stats = ({ account_frontiers_cache, time }) => {
-  const balance_ranges = new Map(
-    Object.entries({
-      _1000000: new BigNumber(1e39),
-      _100000: new BigNumber(1e38),
-      _10000: new BigNumber(1e37),
-      _1000: new BigNumber(1e36),
-      _100: new BigNumber(1e35),
-      _10: new BigNumber(1e34),
-      _1: new BigNumber(1e33),
-      _01: new BigNumber(1e32),
-      _001: new BigNumber(1e31),
-      _0001: new BigNumber(1e30),
-      _00001: new BigNumber(1e29),
-      _000001: new BigNumber(1e28),
-      _000001_below: new BigNumber(0)
-    })
-  )
+  const balance_ranges = [
+    { key: '_1000000', value: 1e39 },
+    { key: '_100000', value: 1e38 },
+    { key: '_10000', value: 1e37 },
+    { key: '_1000', value: 1e36 },
+    { key: '_100', value: 1e35 },
+    { key: '_10', value: 1e34 },
+    { key: '_1', value: 1e33 },
+    { key: '_01', value: 1e32 },
+    { key: '_001', value: 1e31 },
+    { key: '_0001', value: 1e30 },
+    { key: '_00001', value: 1e29 },
+    { key: '_000001', value: 1e28 },
+    { key: '_000001_below', value: 0 }
+  ].map((range) => ({ ...range, value: new BigNumber(range.value) }))
 
   const account_counts = {}
   const total_balances = {}
 
-  balance_ranges.forEach((value, range_base_key) => {
-    account_counts[`${range_base_key}_account_count`] = 0
-    total_balances[`${range_base_key}_total_balance`] = new BigNumber(0)
+  balance_ranges.forEach(({ key }) => {
+    account_counts[`${key}_account_count`] = 0
+    total_balances[`${key}_total_balance`] = new BigNumber(0)
   })
 
   account_counts._zero_account_count = 0
   total_balances._zero_total_balance = new BigNumber(0)
 
-  account_frontiers_cache.forEach((account_frontier) => {
-    const { balance } = account_frontier
-    let balance_range_key = new BigNumber(balance).isZero()
-      ? '_zero'
-      : '_000001_below' // Handle zero balance
+  account_frontiers_cache.forEach(({ balance }) => {
+    let balance_range_key = balance.isZero() ? '_zero' : '_000001_below'
 
     if (balance_range_key !== '_zero') {
-      for (const [range_base_key, value] of balance_ranges) {
-        if (new BigNumber(balance).gte(value)) {
-          balance_range_key = range_base_key
+      for (const { key, value } of balance_ranges) {
+        if (balance.gte(value)) {
+          balance_range_key = key
           break
         }
       }
@@ -234,7 +229,11 @@ const rollup_daily_balance_distribution = async ({
 
   const account_frontiers_cache = new BigMap()
   account_frontiers.forEach((frontier) => {
-    account_frontiers_cache.set(frontier.account, frontier)
+    const { account, balance } = frontier
+    account_frontiers_cache.set(account, {
+      account,
+      balance: new BigNumber(balance)
+    })
   })
 
   log(`account_frontiers: ${account_frontiers.length}`)
@@ -290,7 +289,11 @@ const rollup_daily_balance_distribution = async ({
     // update account_frontiers
     daily_account_state_changes.forEach((change) => {
       if (change && change.account) {
-        account_frontiers_cache.set(change.account, change)
+        const { account, balance } = change
+        account_frontiers_cache.set(account, {
+          account,
+          balance: new BigNumber(balance)
+        })
       } else {
         log('Invalid account state change:', change)
         throw new Error('Invalid account state change')
