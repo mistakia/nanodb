@@ -105,18 +105,18 @@ class BigMap {
 
 const get_daily_stats = ({ account_frontiers_cache, time }) => {
   const balance_ranges = [
-    { key: '_1000000', value: 1e39 },
-    { key: '_100000', value: 1e38 },
-    { key: '_10000', value: 1e37 },
-    { key: '_1000', value: 1e36 },
-    { key: '_100', value: 1e35 },
-    { key: '_10', value: 1e34 },
-    { key: '_1', value: 1e33 },
-    { key: '_01', value: 1e32 },
-    { key: '_001', value: 1e31 },
-    { key: '_0001', value: 1e30 },
-    { key: '_00001', value: 1e29 },
-    { key: '_000001', value: 1e28 },
+    { key: '_1000000', value: 1000000000000000000000000000000000000n }, // 1M
+    { key: '_100000', value: 100000000000000000000000000000000000n }, // 100K
+    { key: '_10000', value: 10000000000000000000000000000000000n }, // 10K
+    { key: '_1000', value: 1000000000000000000000000000000000n }, // 1K
+    { key: '_100', value: 100000000000000000000000000000000n }, // 100
+    { key: '_10', value: 10000000000000000000000000000000n }, // 10
+    { key: '_1', value: 1000000000000000000000000000000n }, // 1
+    { key: '_01', value: 100000000000000000000000000000n }, // 0.1
+    { key: '_001', value: 10000000000000000000000000000n }, // 0.01
+    { key: '_0001', value: 1000000000000000000000000000n }, // 0.001
+    { key: '_00001', value: 100000000000000000000000000n }, // 0.0001
+    { key: '_000001', value: 10000000000000000000000000n }, // 0.00001
     { key: '_000001_below', value: 0 }
   ].map((range) => ({ ...range, value: new BigNumber(range.value) }))
 
@@ -211,8 +211,8 @@ const rollup_daily_balance_distribution = async ({
     .with(
       'account_tags',
       db.raw(`
-    SELECT 
-      accounts_tags.account, 
+    SELECT
+      accounts_tags.account,
       array_agg(tag) as tags
     FROM accounts_tags
     JOIN latest_balances ON accounts_tags.account = latest_balances.account
@@ -264,8 +264,8 @@ const rollup_daily_balance_distribution = async ({
       .with(
         'daily_account_tags',
         db.raw(`
-      SELECT 
-        accounts_tags.account, 
+      SELECT
+        accounts_tags.account,
         array_agg(tag) as tags
       FROM accounts_tags
       JOIN latest_daily_balances ON accounts_tags.account = latest_daily_balances.account
