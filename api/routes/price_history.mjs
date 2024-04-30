@@ -20,7 +20,7 @@ router.get('/?', async (req, res) => {
 
     res.json(data)
   } catch (error) {
-    logger.error(error)
+    logger(error)
     res.status(500).json({ error: error.toString() })
   }
 })
