@@ -172,15 +172,16 @@ const get_daily_stats = async (time) => {
   return insert
 }
 
+// process daily rollup statistics going backwards in time
 const main = async ({
-  start_date = null,
-  days = 1,
-  full = false,
-  end_date = null
+  start_date = null, // The start date for processing. If null, defaults to the last completed UTC day.
+  days = 1, // The number of days to process.
+  full = false, // Whether to process the full range.
+  end_date = null // The end date for processing. If null, it is calculated based on other parameters.
 }) => {
   let time = start_date
     ? dayjs(start_date).utc().startOf('day')
-    : dayjs().utc().startOf('day')
+    : dayjs().utc().subtract(1, 'day').startOf('day') // default to last completed utc day
   const end = end_date
     ? dayjs(end_date).utc().startOf('day')
     : full

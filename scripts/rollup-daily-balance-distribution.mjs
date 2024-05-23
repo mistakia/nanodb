@@ -162,23 +162,26 @@ const get_daily_stats = ({ account_frontiers_cache, time }) => {
   return result
 }
 
+// Rollup daily balance distribution going forward in time
 const rollup_daily_balance_distribution = async ({
-  start_date = null,
-  days = null,
-  full = false,
-  end_date = null
+  start_date = null, // the start date for processing. defaults to one day prior to the last completed UTC day.
+  days = 1, // the number of days to process.
+  full = false, // whether to process the full range.
+  end_date = null // the end date for processing. defaults to the last completed UTC day.
 }) => {
+  // Determine the start time based on the provided start_date or days
   let time = start_date
     ? dayjs(start_date).utc().startOf('day')
-    : dayjs.unix(first_timestamp).utc().startOf('day')
+    : full
+    ? dayjs.unix(first_timestamp).utc().startOf('day')
+    : dayjs.utc().subtract(1, 'day').subtract(days, 'day').startOf('day')
 
+  // Determine the end time based on the provided end_date
   let end
   if (end_date) {
     end = dayjs(end_date).utc().startOf('day')
-  } else if (days) {
-    end = time.add(days, 'day')
   } else {
-    end = dayjs().utc().startOf('day')
+    end = dayjs().utc().subtract(1, 'day').startOf('day')
   }
 
   log(
@@ -187,7 +190,7 @@ const rollup_daily_balance_distribution = async ({
     )}, full: ${full}, days: ${days}`
   )
 
-  // calculate frontiers at start
+  // Calculate frontiers at the start
   const account_frontiers = await db
     .with(
       'ranked_blocks',
@@ -227,6 +230,7 @@ const rollup_daily_balance_distribution = async ({
     .from('latest_balances')
     .leftJoin('account_tags', 'account_tags.account', 'latest_balances.account')
 
+  // Cache the account frontiers
   const account_frontiers_cache = new BigMap()
   account_frontiers.forEach((frontier) => {
     const { account, balance } = frontier
@@ -239,7 +243,7 @@ const rollup_daily_balance_distribution = async ({
   log(`account_frontiers: ${account_frontiers.length}`)
 
   do {
-    // go through blocks produced that day, update frontiers
+    // Go through blocks produced that day and update frontiers
     const daily_account_state_changes = await db
       .with(
         'daily_blocks',
@@ -286,7 +290,7 @@ const rollup_daily_balance_distribution = async ({
 
     log(`daily_account_state_changes: ${daily_account_state_changes.length}`)
 
-    // update account_frontiers
+    // Update account frontiers
     daily_account_state_changes.forEach((change) => {
       if (change && change.account) {
         const { account, balance } = change
@@ -302,17 +306,18 @@ const rollup_daily_balance_distribution = async ({
 
     log(`calculating daily stats for ${account_frontiers_cache.size} accounts`)
 
-    // generate daily stats
+    // Generate daily stats
     const daily_stats = get_daily_stats({
       account_frontiers_cache,
       time
     })
 
-    // save daily stats
+    // Save daily stats
     await db('rollup_daily').insert(daily_stats).onConflict('timestamp').merge()
 
     log(`processed ${time.format('MM/DD/YYYY')}`)
 
+    // Move to the next day
     time = time.add(1, 'day')
   } while (time.isBefore(end))
 }
