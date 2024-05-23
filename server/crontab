@@ -1,0 +1,7 @@
+################################### Storage Server NanoDB Crontab ###################################
+
+# Rollup daily balance distribution
+0 1 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v16.14.0/bin/node --max-old-space-size=18120 /home/user/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1
+
+# Rollup daily
+0 0 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v16.14.0/bin/node /home/user/nanodb/scripts/rollup-daily.mjs --days 1
