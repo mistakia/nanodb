@@ -5,3 +5,6 @@
 
 # Rollup daily
 0 0 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v16.14.0/bin/node /home/user/nanodb/scripts/rollup-daily.mjs --days 1
+
+# Import Price Quotes
+0 5 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v16.14.0/bin/node /home/user/nanodb/scripts/import-coingecko-price-history.mjs
