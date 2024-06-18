@@ -11,7 +11,7 @@ router.get('/?', async (req, res) => {
       return res.json(cached)
     }
 
-    const data = await db('historical_price')
+    const data = await db('historical_price').orderBy('timestamp_utc', 'asc')
 
     if (data.length) {
       // set cache for 12 hours
