@@ -26,7 +26,7 @@ module.exports = {
       host: 'storage',
       ref: 'origin/master',
       repo: 'https://github.com/mistakia/nanodb.git',
-      path: '/root/league',
+      path: '/home/user/nanodb',
       'pre-deploy': 'git pull',
       'pre-deploy-local': '',
       'post-deploy':
