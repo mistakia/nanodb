@@ -3,7 +3,8 @@
     "start": "NODE_ENV=development node server",
     "lint": "eslint . --ext js,mjs",
     "prettier": "prettier --write .",
-    "test": "TZ=America/New_York NODE_ENV=test TEST=all mocha --exit"
+    "test": "TZ=America/New_York NODE_ENV=test TEST=all mocha --exit",
+    "deploy": "pm2 deploy server.pm2.config.js production"
   },
   "dependencies": {
     "bignumber.js": "^9.0.1",
