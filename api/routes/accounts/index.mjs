@@ -9,7 +9,14 @@ const router = express.Router({ mergeParams: true })
 router.get('/?', async (req, res) => {
   const { logger, cache, db } = req.app.locals
   try {
-    let { tags, accounts, limit = 100, offset = 0 } = req.query
+    let {
+      tags,
+      accounts,
+      limit = 100,
+      offset = 0,
+      order_by,
+      order_by_direction = 'desc'
+    } = req.query
 
     // Validate limit
     limit = parseInt(limit, 10)
@@ -27,6 +34,13 @@ router.get('/?', async (req, res) => {
         .send({ error: 'Offset must be a positive integer' })
     }
 
+    // validate order_by_direction
+    if (order_by_direction !== 'asc' && order_by_direction !== 'desc') {
+      return res
+        .status(400)
+        .send({ error: 'Order by direction must be asc or desc' })
+    }
+
     let accounts_array = accounts ? accounts.toLowerCase().split(',') : []
     let tags_array = tags ? tags.toLowerCase().split(',') : []
 
@@ -38,7 +52,7 @@ router.get('/?', async (req, res) => {
     if (accounts_array.length === 0 && tags_array.length === 0) {
       cache_key = `/accounts/offset/${offset}/limit/${limit}`
     } else if (accounts_array.length === 0) {
-      cache_key = `/accounts//tags/${tags_array.join(
+      cache_key = `/accounts/tags/${tags_array.join(
         ','
       )}/offset/${offset}/limit/${limit}`
     } else if (tags_array.length === 0) {
@@ -72,6 +86,12 @@ router.get('/?', async (req, res) => {
 
     if (tags_array.length > 0) {
       query.whereIn('accounts_tags.tag', tags_array)
+    }
+
+    switch (order_by) {
+      case 'balance':
+        query.orderBy('balance', order_by_direction)
+        break
     }
 
     // Add a query to get all tags for each account
