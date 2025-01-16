@@ -104,10 +104,7 @@ const main = async ({ hours, threshold }) => {
           ])
           .where(function () {
             this.whereNull('subtype')
-            this.orWhereIn('subtype', [
-              constants.blockSubType.open,
-              constants.blockSubType.receive
-            ])
+            this.orWhereIn('subtype', [constants.blockSubType.receive])
           })
       })
 

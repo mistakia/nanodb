@@ -105,7 +105,7 @@ router.get('/stats', async (req, res) => {
         FROM
           blocks
         WHERE
-          account = '${address}' AND type != ${constants.blockType.epoch}
+          account = '${address}' AND subtype != ${constants.blockSubType.epoch}
       )
       SELECT
         MAX(balance) AS max_balance,
@@ -243,10 +243,7 @@ router.get('/blocks/:type/summary', async (req, res) => {
             ])
             .where(function () {
               this.whereNull('subtype')
-              this.orWhereIn('subtype', [
-                constants.blockSubType.open,
-                constants.blockSubType.receive
-              ])
+              this.orWhereIn('subtype', [constants.blockSubType.receive])
             })
         } else {
           this.select('representative as destination_account')

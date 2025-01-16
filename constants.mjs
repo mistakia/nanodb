@@ -13,11 +13,9 @@ export default {
     open: 2,
     receive: 3,
     send: 4,
-    change: 5,
-    epoch: 6
+    change: 5
   },
   blockSubType: {
-    open: 1,
     receive: 2,
     send: 3,
     change: 4,
