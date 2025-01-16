@@ -24,7 +24,7 @@ module.exports = {
     production: {
       user: 'root',
       host: 'storage',
-      ref: 'origin/master',
+      ref: 'origin/main',
       repo: 'https://github.com/mistakia/nanodb.git',
       path: '/home/user/nanodb',
       'pre-deploy': 'git pull',
