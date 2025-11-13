@@ -23,7 +23,7 @@ module.exports = {
   deploy: {
     production: {
       user: 'user',
-      host: 'storage',
+      host: 'database',
       ref: 'origin/main',
       repo: 'https://github.com/mistakia/nanodb.git',
       path: '/home/user/nanodb',

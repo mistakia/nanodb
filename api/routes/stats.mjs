@@ -19,19 +19,29 @@ const calculate_stats = async () => {
   const one_hour_ago = Math.round((now - 3600000) / 1000)
   const ten_minutes_ago = Math.round((now - 600000) / 1000)
 
-  const confirmations_last_24_hours_query = db('blocks')
-    .where(function () {
-      this.where('election_time', '>=', one_day_ago_ms)
-      this.orWhere('local_timestamp', '>=', one_day_ago)
-    })
+  // Hybrid approach: Use rollup_daily for historical data + live blocks for recent data
+  // Get the start of yesterday (to query complete day from rollup)
+  const yesterday_start = Math.floor((now - one_day_total_ms) / 86400000) * 86400
+  const today_start = Math.floor(now / 86400000) * 86400
+
+  // Query rollup_daily for yesterday's complete data
+  const rollup_yesterday_query = db('rollup_daily')
+    .where('timestamp', '>=', yesterday_start)
+    .where('timestamp', '<', today_start)
+    .select(
+      db.raw('COALESCE(SUM(blocks), 0) as blocks_count'),
+      db.raw('COALESCE(SUM(send_volume), 0) as send_volume_sum')
+    )
+    .first()
+
+  // Query live blocks for today + any recent blocks from yesterday
+  const confirmations_recent_query = db('blocks')
+    .where('local_timestamp', '>=', one_day_ago)
     .where('confirmed', '=', 1)
     .count('* as count')
 
-  const send_volume_last_24_hours_query = db('blocks')
-    .where(function () {
-      this.where('election_time', '>=', one_day_ago_ms)
-      this.orWhere('local_timestamp', '>=', one_day_ago)
-    })
+  const send_volume_recent_query = db('blocks')
+    .where('local_timestamp', '>=', one_day_ago)
     .where('confirmed', '=', 1)
     .where(function () {
       this.where('subtype', '=', constants.blockSubType.send)
@@ -77,23 +87,31 @@ const calculate_stats = async () => {
     .count('* as count')
 
   const [
-    confirmations_last_24_hours,
+    rollup_yesterday,
+    confirmations_recent,
+    send_volume_recent,
     median_latency_last_24_hours,
     median_latency_last_hour,
     median_latency_last_10_mins,
-    confirmations_without_election_time_last_24_hours,
-    send_volume_last_24_hours
+    confirmations_without_election_time_last_24_hours
   ] = await Promise.all([
-    confirmations_last_24_hours_query,
+    rollup_yesterday_query,
+    confirmations_recent_query,
+    send_volume_recent_query,
     median_latency_last_24_hours_query,
     median_latency_last_hour_query,
     median_latency_last_10_mins_query,
-    confirmations_without_election_time_last_24_hours_query,
-    send_volume_last_24_hours_query
+    confirmations_without_election_time_last_24_hours_query
   ])
 
+  // Combine rollup data with recent live data
+  const confirmations_last_24_hours = Number(confirmations_recent[0].count)
+  const send_volume_last_24_hours =
+    Number(rollup_yesterday?.send_volume_sum || 0) +
+    Number(send_volume_recent?.sum || 0)
+
   const response_data = {
-    confirmations_last_24_hours: Number(confirmations_last_24_hours[0].count),
+    confirmations_last_24_hours,
     median_latency_ms_last_24_hours: Number(
       median_latency_last_24_hours[0].median_latency_ms
     ),
@@ -106,7 +124,7 @@ const calculate_stats = async () => {
     confirmations_without_election_time_last_24_hours: Number(
       confirmations_without_election_time_last_24_hours[0].count
     ),
-    send_volume_last_24_hours: Number(send_volume_last_24_hours.sum)
+    send_volume_last_24_hours
   }
 
   cache.set('/api/stats', response_data, 420)
