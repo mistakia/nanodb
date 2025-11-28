@@ -3,6 +3,7 @@ module.exports = {
     {
       name: 'nanodb-api',
       script: 'server.mjs',
+      cwd: '/home/user/projects/nanodb',
       watch: './api',
       env_production: {
         NODE_ENV: 'production'
@@ -12,26 +13,12 @@ module.exports = {
     {
       name: 'nanodb-sync-websocket',
       script: 'scripts/import-websocket.mjs',
+      cwd: '/home/user/projects/nanodb',
       watch: '.',
       env_production: {
         NODE_ENV: 'production'
       },
       max_memory_restart: '2G'
     }
-  ],
-
-  deploy: {
-    production: {
-      user: 'user',
-      host: 'database',
-      ref: 'origin/main',
-      repo: 'https://github.com/mistakia/nanodb.git',
-      path: '/home/user/projects/nanodb',
-      'pre-deploy': 'git pull',
-      'pre-deploy-local': '',
-      'post-deploy':
-        'source ~/.bash_profile && /home/user/.nvm/versions/node/v16.14.0/bin/yarn install && pm2 reload server.pm2.config.js --env production',
-      'pre-setup': ''
-    }
-  }
+  ]
 }
