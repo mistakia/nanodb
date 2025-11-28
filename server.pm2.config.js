@@ -26,7 +26,7 @@ module.exports = {
       host: 'database',
       ref: 'origin/main',
       repo: 'https://github.com/mistakia/nanodb.git',
-      path: '/home/user/nanodb',
+      path: '/home/user/projects/nanodb',
       'pre-deploy': 'git pull',
       'pre-deploy-local': '',
       'post-deploy':
