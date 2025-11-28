@@ -5,6 +5,7 @@
     "prettier": "prettier --write .",
     "test": "TZ=America/New_York NODE_ENV=test TEST=all mocha --exit",
     "deploy": "ssh database 'cd /home/user/projects/nanodb && git pull && source ~/.nvm/nvm.sh && nvm use 22 && yarn install && pm2 reload server.pm2.config.js --env production'",
+    "deploy:crontab": "scp ./server/crontab database:~/crontab/nanodb.cron && ssh database '~/bin/load_crontab_files'",
     "export:schema": "ssh database 'pg_dump -U nanodb_user -h localhost --dbname=nanodb_production --schema-only --clean --no-owner --if-exists --file=/tmp/schema.postgres.sql --no-tablespaces' && scp database:/tmp/schema.postgres.sql ./db/ && awk 'NR==17{print \"SET search_path = public;\"} {print}' ./db/schema.postgres.sql > ./db/schema.tmp.sql && mv ./db/schema.tmp.sql ./db/schema.postgres.sql"
   },
   "dependencies": {
