@@ -1,10 +1,15 @@
-################################### Storage Server NanoDB Crontab ###################################
+################################### Database Server NanoDB Crontab ###################################
+# Location: ~/crontab/nanodb.cron on database.localdomain
+# Load with: load_crontab_files (loads all ~/crontab/*.cron files)
 
-# Rollup daily balance distribution
-0 1 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v16.14.0/bin/node --max-old-space-size=18120 /home/user/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1
+# Rollup hourly stats (runs at :05 past every hour to ensure previous hour is complete)
+5 * * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/rollup-hourly.mjs >> /tmp/rollup-hourly.log 2>&1
 
-# Rollup daily
-0 0 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v16.14.0/bin/node /home/user/nanodb/scripts/rollup-daily.mjs --days 1
+# Rollup daily (midnight UTC)
+0 0 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/rollup-daily.mjs --days 1
 
-# Import Price Quotes
-0 5 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v16.14.0/bin/node /home/user/nanodb/scripts/import-coingecko-price-history.mjs
+# Rollup daily balance distribution (1 AM UTC, needs extra memory for large dataset)
+0 1 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node --max-old-space-size=18120 /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1
+
+# Import Price Quotes from CoinGecko (5 AM UTC)
+0 5 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/import-coingecko-price-history.mjs
