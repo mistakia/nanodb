@@ -10,7 +10,8 @@ const logger = debug('api:stats')
 
 let is_calculating_stats = false
 
-const LATENCY_SQL = 'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'
+const LATENCY_SQL =
+  'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'
 
 /**
  * Build a median latency query for confirmed blocks with election_time
@@ -109,7 +110,9 @@ const calculate_stats_with_hourly = async (
       .select(
         db.raw('COALESCE(SUM(confirmations_count), 0) as confirmations_count'),
         db.raw('COALESCE(SUM(send_volume), 0) as send_volume'),
-        db.raw('COALESCE(SUM(confirmations_without_election_time), 0) as confirmations_without_election_time')
+        db.raw(
+          'COALESCE(SUM(confirmations_without_election_time), 0) as confirmations_without_election_time'
+        )
       )
       .first(),
 
@@ -124,8 +127,10 @@ const calculate_stats_with_hourly = async (
       .where('local_timestamp', '>=', current_hour_start)
       .where('confirmed', 1)
       .where(function () {
-        this.where('subtype', constants.blockSubType.send)
-          .orWhere('type', constants.blockType.send)
+        this.where('subtype', constants.blockSubType.send).orWhere(
+          'type',
+          constants.blockType.send
+        )
       })
       .sum('amount as sum')
       .first(),
@@ -153,7 +158,9 @@ const calculate_stats_with_hourly = async (
     confirmations_without_election_time_last_24_hours:
       Number(stats_hourly?.confirmations_without_election_time || 0) +
       Number(live_without_election?.count || 0),
-    median_latency_ms_last_24_hours: Number(latency_24h?.median_latency_ms || 0),
+    median_latency_ms_last_24_hours: Number(
+      latency_24h?.median_latency_ms || 0
+    ),
     median_latency_ms_last_hour: Number(latency_1h?.median_latency_ms || 0),
     median_latency_ms_last_10_mins: Number(latency_10m?.median_latency_ms || 0)
   }
@@ -185,8 +192,10 @@ const calculate_stats_live_only = async (
       .where('local_timestamp', '>=', one_day_ago)
       .where('confirmed', 1)
       .where(function () {
-        this.where('subtype', constants.blockSubType.send)
-          .orWhere('type', constants.blockType.send)
+        this.where('subtype', constants.blockSubType.send).orWhere(
+          'type',
+          constants.blockType.send
+        )
       })
       .sum('amount as sum')
       .first(),
@@ -206,8 +215,12 @@ const calculate_stats_live_only = async (
   return {
     confirmations_last_24_hours: Number(confirmations?.count || 0),
     send_volume_last_24_hours: Number(send_volume?.sum || 0),
-    confirmations_without_election_time_last_24_hours: Number(without_election?.count || 0),
-    median_latency_ms_last_24_hours: Number(latency_24h?.median_latency_ms || 0),
+    confirmations_without_election_time_last_24_hours: Number(
+      without_election?.count || 0
+    ),
+    median_latency_ms_last_24_hours: Number(
+      latency_24h?.median_latency_ms || 0
+    ),
     median_latency_ms_last_hour: Number(latency_1h?.median_latency_ms || 0),
     median_latency_ms_last_10_mins: Number(latency_10m?.median_latency_ms || 0)
   }

@@ -61,7 +61,12 @@ const is_hour_processed = async (hour_timestamp) => {
 const aggregate_hour_stats = async (hour_timestamp) => {
   const hour_end = hour_timestamp + 3600
 
-  logger(`Aggregating hour: ${dayjs.unix(hour_timestamp).utc().format('YYYY-MM-DD HH:mm')} UTC`)
+  logger(
+    `Aggregating hour: ${dayjs
+      .unix(hour_timestamp)
+      .utc()
+      .format('YYYY-MM-DD HH:mm')} UTC`
+  )
 
   // Base query for confirmed blocks in the hour window
   const base_query = () =>
@@ -85,28 +90,46 @@ const aggregate_hour_stats = async (hour_timestamp) => {
 
     base_query()
       .where(function () {
-        this.where('subtype', constants.blockSubType.send)
-          .orWhere('type', constants.blockType.send)
+        this.where('subtype', constants.blockSubType.send).orWhere(
+          'type',
+          constants.blockType.send
+        )
       })
       .sum('amount as total')
       .first(),
 
     base_query()
       .select(
-        db.raw(`COUNT(*) FILTER (WHERE subtype = ${constants.blockSubType.send}) as send_count`),
-        db.raw(`COUNT(*) FILTER (WHERE subtype = ${constants.blockSubType.receive}) as receive_count`),
-        db.raw(`COUNT(*) FILTER (WHERE subtype = ${constants.blockSubType.change}) as change_count`),
-        db.raw(`COUNT(*) FILTER (WHERE type = ${constants.blockType.open}) as open_count`)
+        db.raw(
+          `COUNT(*) FILTER (WHERE subtype = ${constants.blockSubType.send}) as send_count`
+        ),
+        db.raw(
+          `COUNT(*) FILTER (WHERE subtype = ${constants.blockSubType.receive}) as receive_count`
+        ),
+        db.raw(
+          `COUNT(*) FILTER (WHERE subtype = ${constants.blockSubType.change}) as change_count`
+        ),
+        db.raw(
+          `COUNT(*) FILTER (WHERE type = ${constants.blockType.open}) as open_count`
+        )
       )
       .first(),
 
     base_query()
       .whereNotNull('election_time')
       .select(
-        db.raw('PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'),
-        db.raw('PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as p95_latency_ms'),
-        db.raw('MIN(election_time - local_timestamp::bigint * 1000) as min_latency_ms'),
-        db.raw('MAX(election_time - local_timestamp::bigint * 1000) as max_latency_ms')
+        db.raw(
+          'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'
+        ),
+        db.raw(
+          'PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as p95_latency_ms'
+        ),
+        db.raw(
+          'MIN(election_time - local_timestamp::bigint * 1000) as min_latency_ms'
+        ),
+        db.raw(
+          'MAX(election_time - local_timestamp::bigint * 1000) as max_latency_ms'
+        )
       )
       .first(),
 
@@ -122,9 +145,14 @@ const aggregate_hour_stats = async (hour_timestamp) => {
 
   return {
     hour_timestamp,
-    hour_timestamp_utc: dayjs.unix(hour_timestamp).utc().format('YYYY-MM-DD HH:mm:ss'),
+    hour_timestamp_utc: dayjs
+      .unix(hour_timestamp)
+      .utc()
+      .format('YYYY-MM-DD HH:mm:ss'),
     confirmations_count,
-    confirmations_without_election_time: Number(without_election_result?.count || 0),
+    confirmations_without_election_time: Number(
+      without_election_result?.count || 0
+    ),
     send_volume: BigNumber(send_volume_result?.total || 0).toFixed(0),
     median_latency_ms: latency_result?.median_latency_ms ?? null,
     p95_latency_ms: latency_result?.p95_latency_ms ?? null,
@@ -158,7 +186,9 @@ const upsert_hour_stats = async (stats) => {
       updated_at: db.fn.now()
     })
 
-  logger(`Saved stats for hour ${hour_timestamp}: ${stats.confirmations_count} confirmations`)
+  logger(
+    `Saved stats for hour ${hour_timestamp}: ${stats.confirmations_count} confirmations`
+  )
 }
 
 /**
@@ -169,7 +199,7 @@ const upsert_hour_stats = async (stats) => {
  */
 const process_hour = async (hour_timestamp, force = false) => {
   // Check if already processed
-  if (!force && await is_hour_processed(hour_timestamp)) {
+  if (!force && (await is_hour_processed(hour_timestamp))) {
     logger(`Hour ${hour_timestamp} already processed, skipping`)
     return null
   }
@@ -207,11 +237,15 @@ const backfill_hours = async (hours_count, force = false) => {
 
     // Log progress every 24 hours
     if (i % 24 === 0) {
-      logger(`Progress: ${i}/${hours_count} hours (${processed_count} processed, ${skipped_count} skipped)`)
+      logger(
+        `Progress: ${i}/${hours_count} hours (${processed_count} processed, ${skipped_count} skipped)`
+      )
     }
   }
 
-  logger(`Backfill complete: ${processed_count} processed, ${skipped_count} skipped`)
+  logger(
+    `Backfill complete: ${processed_count} processed, ${skipped_count} skipped`
+  )
 }
 
 const main = async () => {
