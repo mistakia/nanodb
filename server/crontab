@@ -8,8 +8,9 @@
 # Rollup daily (midnight UTC)
 0 0 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/rollup-daily.mjs --days 1
 
-# Rollup daily balance distribution (1 AM UTC, needs extra memory for large dataset)
-0 1 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node --max-old-space-size=18120 /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1
+# Rollup daily balance distribution (3 AM UTC - staggered to avoid memory contention with hourly backups)
+# Memory reduced from 18GB to 14GB to leave headroom for PostgreSQL operations
+0 3 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node --max-old-space-size=14336 /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1
 
 # Import Price Quotes from CoinGecko (5 AM UTC)
 0 5 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/import-coingecko-price-history.mjs
