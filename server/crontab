@@ -2,6 +2,8 @@
 # Location: ~/crontab/nanodb.cron on database.localdomain
 # Load with: load_crontab_files (loads all ~/crontab/*.cron files)
 
+JOB_PROJECT=nanodb
+
 # Rollup hourly stats (runs at :05 past every hour to ensure previous hour is complete)
 5 * * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/rollup-hourly.mjs >> /tmp/rollup-hourly.log 2>&1
 
