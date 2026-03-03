@@ -8,6 +8,7 @@ import utc from 'dayjs/plugin/utc.js'
 import constants from '#constants'
 import db from '#db'
 import { isMain } from '#common'
+import report_job from '../common/report-job.mjs'
 
 dayjs.extend(utc)
 
@@ -249,6 +250,8 @@ const backfill_hours = async (hours_count, force = false) => {
 }
 
 const main = async () => {
+  const start_time = Date.now()
+  let error
   try {
     logger('Starting hourly rollup...')
 
@@ -263,12 +266,22 @@ const main = async () => {
     }
 
     logger('Hourly rollup complete')
-    process.exit(0)
-  } catch (error) {
-    logger(`Error: ${error.message}`)
-    console.error(error)
-    process.exit(1)
+  } catch (err) {
+    error = err
+    logger(`Error: ${err.message}`)
+    console.error(err)
   }
+
+  await report_job({
+    job_id: 'nanodb-rollup-hourly',
+    success: !error,
+    reason: error ? (error.message || String(error)) : null,
+    duration_ms: Date.now() - start_time,
+    schedule: '5 * * * *',
+    schedule_type: 'expr'
+  })
+
+  process.exit(error ? 1 : 0)
 }
 
 if (isMain(import.meta.url)) {
