@@ -5,14 +5,14 @@
 JOB_PROJECT=nanodb
 
 # Rollup hourly stats (runs at :05 past every hour to ensure previous hour is complete)
-5 * * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/rollup-hourly.mjs >> /tmp/rollup-hourly.log 2>&1
+5 * * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/rollup-hourly.mjs &>> /var/log/nanodb/rollup-hourly.log
 
 # Rollup daily (midnight UTC)
-0 0 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/rollup-daily.mjs --days 1
+0 0 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/rollup-daily.mjs --days 1 &>> /var/log/nanodb/rollup-daily.log
 
 # Rollup daily balance distribution (3 AM UTC - staggered to avoid memory contention with hourly backups)
 # Memory reduced from 18GB to 14GB to leave headroom for PostgreSQL operations
-0 3 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node --max-old-space-size=14336 /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1
+0 3 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node --max-old-space-size=14336 /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1 &>> /var/log/nanodb/rollup-daily-balance-distribution.log
 
 # Import Price Quotes from CoinGecko (5 AM UTC)
-0 5 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/import-coingecko-price-history.mjs
+0 5 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/v22.13.0/bin/node /home/user/projects/nanodb/scripts/import-coingecko-price-history.mjs &>> /var/log/nanodb/import-coingecko-price-history.log
