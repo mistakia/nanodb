@@ -32,13 +32,26 @@ let frontiers_queue = {}
 let blocks_queue = []
 const election_info_queue = {}
 
+const MAX_BACKFILL_ITERATIONS = 500
+
 const update_account = async ({ account, account_info, block_count }) => {
   let cursor = account_info.frontier
   const height = Number(account_info.block_count)
+  let iterations = 0
+  let prev_block_count = block_count
 
   while (block_count < height) {
+    iterations++
+
+    if (iterations > MAX_BACKFILL_ITERATIONS) {
+      logger(
+        `ERROR: backfill for ${account} exceeded ${MAX_BACKFILL_ITERATIONS} iterations (height: ${height}, count: ${block_count}), aborting`
+      )
+      break
+    }
+
     logger(
-      `account height: ${height}, current count: ${block_count}, cursor: ${cursor}`
+      `account height: ${height}, current count: ${block_count}, cursor: ${cursor}, iteration: ${iterations}`
     )
     const count = Math.min(account_info.block_count, MIN_BATCH_SIZE)
     const chain = await getChain({ block: cursor, count })
@@ -77,6 +90,15 @@ const update_account = async ({ account, account_info, block_count }) => {
       .count('* as block_count')
       .where({ account })
     block_count = result[0].block_count
+
+    // Detect stalled progress (count not increasing despite inserting blocks)
+    if (block_count <= prev_block_count && blockInserts.length > 0) {
+      logger(
+        `ERROR: block_count not increasing for ${account} (stuck at ${block_count} after inserting ${blockInserts.length} blocks), possible index corruption -- aborting`
+      )
+      break
+    }
+    prev_block_count = block_count
   }
 
   logger(`finished processing blocks for ${account}`)
