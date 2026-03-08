@@ -192,44 +192,49 @@ const rollup_daily_balance_distribution = async ({
   )
 
   // Calculate frontiers at the start
-  const account_frontiers = await db
-    .with(
-      'ranked_blocks',
-      db.raw(`
-    SELECT
-      account,
-      balance,
-      rank() OVER (PARTITION BY account ORDER BY height DESC) AS rank
-    FROM blocks
-    WHERE local_timestamp <= ${time.unix()}
-  `)
-    )
-    .with(
-      'latest_balances',
-      db.raw(`
-    SELECT account, balance
-    FROM ranked_blocks
-    WHERE rank = 1
-  `)
-    )
-    .with(
-      'account_tags',
-      db.raw(`
-    SELECT
-      accounts_tags.account,
-      array_agg(tag) as tags
-    FROM accounts_tags
-    JOIN latest_balances ON accounts_tags.account = latest_balances.account
-    GROUP BY accounts_tags.account
-  `)
-    )
-    .select(
-      'latest_balances.account',
-      'latest_balances.balance',
-      'account_tags.tags'
-    )
-    .from('latest_balances')
-    .leftJoin('account_tags', 'account_tags.account', 'latest_balances.account')
+  // Uses window function rank() OVER (PARTITION BY account ORDER BY height DESC)
+  // on the full blocks table, requiring elevated work_mem for the sort operation.
+  const account_frontiers = await db.transaction(async (trx) => {
+    await trx.raw("SET LOCAL work_mem = '256MB'")
+    return trx
+      .with(
+        'ranked_blocks',
+        trx.raw(`
+      SELECT
+        account,
+        balance,
+        rank() OVER (PARTITION BY account ORDER BY height DESC) AS rank
+      FROM blocks
+      WHERE local_timestamp <= ${time.unix()}
+    `)
+      )
+      .with(
+        'latest_balances',
+        trx.raw(`
+      SELECT account, balance
+      FROM ranked_blocks
+      WHERE rank = 1
+    `)
+      )
+      .with(
+        'account_tags',
+        trx.raw(`
+      SELECT
+        accounts_tags.account,
+        array_agg(tag) as tags
+      FROM accounts_tags
+      JOIN latest_balances ON accounts_tags.account = latest_balances.account
+      GROUP BY accounts_tags.account
+    `)
+      )
+      .select(
+        'latest_balances.account',
+        'latest_balances.balance',
+        'account_tags.tags'
+      )
+      .from('latest_balances')
+      .leftJoin('account_tags', 'account_tags.account', 'latest_balances.account')
+  })
 
   // Cache the account frontiers
   const account_frontiers_cache = new BigMap()
@@ -245,49 +250,52 @@ const rollup_daily_balance_distribution = async ({
 
   do {
     // Go through blocks produced that day and update frontiers
-    const daily_account_state_changes = await db
-      .with(
-        'daily_blocks',
-        db.raw(`
-      SELECT
-        account,
-        balance,
-        rank() OVER (PARTITION BY account ORDER BY height DESC) AS rank
-      FROM blocks
-      WHERE local_timestamp >= ${time.unix()}
-        AND local_timestamp < ${time.add(1, 'day').unix()}
-    `)
-      )
-      .with(
-        'latest_daily_balances',
-        db.raw(`
-      SELECT account, balance
-      FROM daily_blocks
-      WHERE rank = 1
-    `)
-      )
-      .with(
-        'daily_account_tags',
-        db.raw(`
-      SELECT
-        accounts_tags.account,
-        array_agg(tag) as tags
-      FROM accounts_tags
-      JOIN latest_daily_balances ON accounts_tags.account = latest_daily_balances.account
-      GROUP BY accounts_tags.account
-    `)
-      )
-      .select(
-        'latest_daily_balances.account',
-        'latest_daily_balances.balance',
-        'daily_account_tags.tags'
-      )
-      .from('latest_daily_balances')
-      .leftJoin(
-        'daily_account_tags',
-        'daily_account_tags.account',
-        'latest_daily_balances.account'
-      )
+    const daily_account_state_changes = await db.transaction(async (trx) => {
+      await trx.raw("SET LOCAL work_mem = '256MB'")
+      return trx
+        .with(
+          'daily_blocks',
+          trx.raw(`
+        SELECT
+          account,
+          balance,
+          rank() OVER (PARTITION BY account ORDER BY height DESC) AS rank
+        FROM blocks
+        WHERE local_timestamp >= ${time.unix()}
+          AND local_timestamp < ${time.add(1, 'day').unix()}
+      `)
+        )
+        .with(
+          'latest_daily_balances',
+          trx.raw(`
+        SELECT account, balance
+        FROM daily_blocks
+        WHERE rank = 1
+      `)
+        )
+        .with(
+          'daily_account_tags',
+          trx.raw(`
+        SELECT
+          accounts_tags.account,
+          array_agg(tag) as tags
+        FROM accounts_tags
+        JOIN latest_daily_balances ON accounts_tags.account = latest_daily_balances.account
+        GROUP BY accounts_tags.account
+      `)
+        )
+        .select(
+          'latest_daily_balances.account',
+          'latest_daily_balances.balance',
+          'daily_account_tags.tags'
+        )
+        .from('latest_daily_balances')
+        .leftJoin(
+          'daily_account_tags',
+          'daily_account_tags.account',
+          'latest_daily_balances.account'
+        )
+    })
 
     log(`daily_account_state_changes: ${daily_account_state_changes.length}`)
 

@@ -77,6 +77,8 @@ const aggregate_hour_stats = async (hour_timestamp) => {
       .where('confirmed', 1)
 
   // Run all aggregation queries in parallel
+  // The latency query uses PERCENTILE_CONT (ordered aggregate requiring sort),
+  // so it gets elevated work_mem via SET LOCAL inside a transaction.
   const [
     confirmations_result,
     without_election_result,
@@ -116,23 +118,29 @@ const aggregate_hour_stats = async (hour_timestamp) => {
       )
       .first(),
 
-    base_query()
-      .whereNotNull('election_time')
-      .select(
-        db.raw(
-          'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'
-        ),
-        db.raw(
-          'PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as p95_latency_ms'
-        ),
-        db.raw(
-          'MIN(election_time - local_timestamp::bigint * 1000) as min_latency_ms'
-        ),
-        db.raw(
-          'MAX(election_time - local_timestamp::bigint * 1000) as max_latency_ms'
+    db.transaction(async (trx) => {
+      await trx.raw("SET LOCAL work_mem = '128MB'")
+      return trx('blocks')
+        .where('local_timestamp', '>=', hour_timestamp)
+        .where('local_timestamp', '<', hour_end)
+        .where('confirmed', 1)
+        .whereNotNull('election_time')
+        .select(
+          trx.raw(
+            'PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as median_latency_ms'
+          ),
+          trx.raw(
+            'PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY election_time - local_timestamp::bigint * 1000) as p95_latency_ms'
+          ),
+          trx.raw(
+            'MIN(election_time - local_timestamp::bigint * 1000) as min_latency_ms'
+          ),
+          trx.raw(
+            'MAX(election_time - local_timestamp::bigint * 1000) as max_latency_ms'
+          )
         )
-      )
-      .first(),
+        .first()
+    }),
 
     base_query().countDistinct('account as count').first()
   ])
