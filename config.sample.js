@@ -1,5 +1,5 @@
 module.exports = {
-  port: 8080,
+  port: 8084,
   jwt: {
     secret: 'xxx',
     algorithms: ['HS256'],
