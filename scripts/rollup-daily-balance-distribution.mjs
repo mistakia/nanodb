@@ -7,7 +7,7 @@ import BigNumber from 'bignumber.js'
 
 import db from '#db'
 import { isMain } from '#common'
-import report_job from '../common/report-job.mjs'
+import report_job from '#common/report-job.mjs'
 
 dayjs.extend(utc)
 
@@ -233,7 +233,11 @@ const rollup_daily_balance_distribution = async ({
         'account_tags.tags'
       )
       .from('latest_balances')
-      .leftJoin('account_tags', 'account_tags.account', 'latest_balances.account')
+      .leftJoin(
+        'account_tags',
+        'account_tags.account',
+        'latest_balances.account'
+      )
   })
 
   // Cache the account frontiers
@@ -349,7 +353,7 @@ const main = async () => {
   await report_job({
     job_id: 'nanodb-rollup-daily-balance-dist',
     success: !error,
-    reason: error ? (error.message || String(error)) : null,
+    reason: error ? error.message || String(error) : null,
     duration_ms: Date.now() - start_time,
     schedule: '0 3 * * *',
     schedule_type: 'expr'

@@ -36,6 +36,7 @@
   },
   "imports": {
     "#common": "./common.mjs",
+    "#common/*": "./common/*",
     "#db": "./db/index.mjs",
     "#constants": "./constants.mjs",
     "#api": "./api/index.mjs",

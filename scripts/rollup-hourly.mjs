@@ -8,7 +8,7 @@ import utc from 'dayjs/plugin/utc.js'
 import constants from '#constants'
 import db from '#db'
 import { isMain } from '#common'
-import report_job from '../common/report-job.mjs'
+import report_job from '#common/report-job.mjs'
 
 dayjs.extend(utc)
 
@@ -283,7 +283,7 @@ const main = async () => {
   await report_job({
     job_id: 'nanodb-rollup-hourly',
     success: !error,
-    reason: error ? (error.message || String(error)) : null,
+    reason: error ? error.message || String(error) : null,
     duration_ms: Date.now() - start_time,
     schedule: '5 * * * *',
     schedule_type: 'expr'

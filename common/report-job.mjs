@@ -1,4 +1,4 @@
-import config from '../config.js'
+import config from '#config'
 
 const report_job = async ({
   job_id,
