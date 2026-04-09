@@ -11,8 +11,8 @@ import extend from 'deep-extend'
 import morgan from 'morgan-debug'
 import cors from 'cors'
 import { WebSocketServer } from 'ws'
-import jwt from 'jsonwebtoken'
-import { expressjwt } from 'express-jwt'
+import { createSecretKey } from 'node:crypto'
+import { jwtVerify } from 'jose'
 
 import config from '#config'
 import * as routes from './routes/index.mjs'
@@ -32,6 +32,8 @@ if (IS_DEV) {
 } else if (IS_PROD) {
   debug.enable('server,api*')
 }
+
+const jwt_secret = createSecretKey(Buffer.from(config.jwt.secret))
 
 const api = express()
 
@@ -59,12 +61,30 @@ api.use('/api/stats', routes.stats)
 api.use('/api/price_history', routes.price_history)
 
 // protected api routes
-api.use('/api/*', expressjwt(config.jwt), (err, req, res, next) => {
+api.use('/api/*', async (req, res, next) => {
   res.set('Expires', '0')
   res.set('Pragma', 'no-cache')
   res.set('Surrogate-Control', 'no-store')
-  if (err.code === 'invalid_token') return next()
-  return next(err)
+
+  const auth_header = req.headers.authorization
+  if (!auth_header || !auth_header.startsWith('Bearer ')) {
+    return next()
+  }
+
+  try {
+    const token = auth_header.slice(7)
+    const { payload } = await jwtVerify(token, jwt_secret, {
+      algorithms: config.jwt.algorithms
+    })
+    req.auth = payload
+  } catch (error) {
+    if (error.code === 'ERR_JWT_EXPIRED' || error.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
+      return next()
+    }
+    return next(error)
+  }
+
+  return next()
 })
 
 api.get('*', (req, res) => {
@@ -90,8 +110,10 @@ server.on('upgrade', async (request, socket, head) => {
   const parsed = new url.URL(request.url, config.url)
   try {
     const token = parsed.searchParams.get('token')
-    const decoded = await jwt.verify(token, config.jwt.secret)
-    request.user = decoded
+    const { payload } = await jwtVerify(token, jwt_secret, {
+      algorithms: config.jwt.algorithms
+    })
+    request.user = payload
   } catch (error) {
     logger(error)
     return socket.destroy()
