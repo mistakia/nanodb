@@ -8,7 +8,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const sqlFile = path.resolve(__dirname, '../db/schema.postgres.sql')
 
 export async function mocha_global_setup() {
-  const sql = await fs.readFile(sqlFile, 'utf8')
+  const raw = await fs.readFile(sqlFile, 'utf8')
+  const sql = raw.replace(/^GRANT\b.*$/gm, '')
   await knex.raw(sql)
 }
 
