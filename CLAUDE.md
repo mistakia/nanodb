@@ -14,7 +14,24 @@ Nano cryptocurrency ledger data in multiple formats (SQL, Parquet, CSV) plus IPF
 yarn install
 yarn start             # Express dev server
 yarn test              # Mocha (TZ=America/New_York)
-python3 scripts/export-lmdb-to-<format>.py
+```
+
+### Export pipelines (Python)
+
+Each export reads from the node's lmdb store and writes to the target. Configure connection details in `config.json`; use `config.sample.json` as the template.
+
+```bash
+python3 scripts/read-lmdb.py             --filename <path/to/lmdb.ldb> [--table NAME] [--count N]
+python3 scripts/export-lmdb-to-mysql.py  --filename <path/to/lmdb.ldb> [--table NAME] [--count N]
+python3 scripts/export-lmdb-to-postgres.py --filename <path/to/lmdb.ldb> [--table NAME] [--count N]
+python3 scripts/export-lmdb-to-parquet.py --filename <path/to/lmdb.ldb> [--table NAME] [--count N]
+```
+
+### Postgres → Neo4j
+
+```bash
+python3 scripts/create-postgresql-stats-tables.py && \
+python3 export-postgresql-to-neo4j-relations-merged.py
 ```
 
 ## Architecture
