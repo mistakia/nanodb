@@ -1,46 +1,50 @@
-import config from '#config'
+import os from 'os'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
 
-const report_job = async ({
-  job_id,
-  success,
-  reason,
-  duration_ms,
-  schedule,
-  schedule_type
-}) => {
-  const { api_url, api_key } = config.job_tracker || {}
-  if (!api_url || !api_key) {
-    return
-  }
+const exec_file = promisify(execFile)
+
+const report_job = async ({ job_id, success, reason }) => {
+  const api_url = process.env.BASE_API_URL
+  if (!api_url) return
+
+  const source = process.env.JOB_SCHEDULE_ENTITY_URI || `service:nanodb-${job_id}`
+  const outcome = success ? 'success' : 'failure'
 
   const controller = new AbortController()
   const timeout_id = setTimeout(() => controller.abort(), 5000)
   try {
-    const response = await fetch(`${api_url}/api/jobs/report`, {
+    const { stdout } = await exec_file('base', ['instance', 'sign-token'], {
+      timeout: 5000
+    })
+    const token = stdout.trim()
+    if (!token) {
+      console.error('run report failed: empty machine token')
+      return
+    }
+
+    const response = await fetch(`${api_url.replace(/\/$/, '')}/api/runs/report`, {
       method: 'POST',
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${api_key}`
+        Authorization: `Machine ${token}`
       },
       body: JSON.stringify({
-        job_id,
-        success,
-        reason,
-        duration_ms,
-        schedule,
-        schedule_type,
-        project: 'nanodb',
-        server: 'database'
+        source,
+        host: os.hostname().split('.')[0],
+        outcome,
+        exit_code: success ? 0 : 1,
+        reason: reason || null
       })
     })
-    clearTimeout(timeout_id)
     if (!response.ok) {
-      console.error(`job tracker report failed: HTTP ${response.status}`)
+      console.error(`run report failed: HTTP ${response.status}`)
     }
   } catch (error) {
+    console.error(`run report failed: ${error.message}`)
+  } finally {
     clearTimeout(timeout_id)
-    console.error(`job tracker report failed: ${error.message}`)
   }
 }
 
