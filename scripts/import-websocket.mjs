@@ -20,7 +20,6 @@ import config from '#config'
 import db from '#db'
 
 const logger = debug('ws')
-debug.enable('ws')
 
 const argv = yargs(hideBin(process.argv)).argv
 
@@ -216,7 +215,7 @@ const save_blocks = async () => {
       }
     }
   } catch (error) {
-    logger(`Error saving blocks: ${error.message}`)
+    console.error(`Error saving blocks: ${error.message}`)
     // Re-add the hashes to the queue to try again
     blocks_queue.push(...hashes)
   } finally {
@@ -279,7 +278,7 @@ ws.onclose = () => {
 }
 
 ws.onerror = (err) => {
-  logger('error:', err)
+  console.error('ws error:', err)
 }
 
 ws.onmessage = (msg) => {
