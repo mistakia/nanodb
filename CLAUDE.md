@@ -18,7 +18,7 @@ yarn test              # Mocha (TZ=America/New_York)
 
 ### Export pipelines (Python)
 
-Each export reads from the node's lmdb store and writes to the target. Configure connection details in `config.json`; use `config.sample.json` as the template.
+Each export reads from the node's lmdb store and writes to the target. Configure connection details in a plaintext `config.json` (not committed; see Conventions for the secrets model).
 
 ```bash
 python3 scripts/read-lmdb.py             --filename <path/to/lmdb.ldb> [--table NAME] [--count N]
@@ -57,7 +57,7 @@ data/                  # Snapshots
 - ESM throughout; `#libs-server/*` import aliases (recent refactor).
 - JWT auth via `jose` (migrated from older `jsonwebtoken`).
 - Knex migrations; MySQL and PostgreSQL both supported.
-- `config.json` holds DB credentials and stays out of the repo. Use `config.sample.json` as the template.
+- Secrets are plaintext and out-of-repo — nanodb has no `.sops.yaml`. The Node app loads `config.${env}.js` (production `config.production.js` is gitignored; `config.sample.js` is the structural template); the Python exporters read an uncommitted plaintext `config.json` holding DB credentials. Sibling nano repos (e.g. nano-community) have cut over to sops/age; if nanodb takes on committed secrets, adopt that scheme per [[user:guideline/homelab/sops-age-authoring.md]].
 
 ## Deployment
 
