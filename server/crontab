@@ -1,3 +1,10 @@
+# Managed by nanodb repo -- do not edit deployed copy
+# Source: nanodb/server/crontab
+# Deploy: yarn deploy:crontab  (-> database:~/crontab/nanodb.cron)
+#         This deploy pipes straight to ssh rather than routing through
+#         deploy_crontab_scope, so it has NO scope manifest and is never
+#         orphan-reaped. As of 2026-08-01 no host has a deployed copy at all.
+#
 ################################### Database Server NanoDB Crontab ###################################
 # Location: ~/crontab/nanodb.cron on database.localdomain
 # Load with: load_crontab_files (loads all ~/crontab/*.cron files)
