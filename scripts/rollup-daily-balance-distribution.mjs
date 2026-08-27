@@ -174,8 +174,8 @@ const rollup_daily_balance_distribution = async ({
   let time = start_date
     ? dayjs(start_date).utc().startOf('day')
     : full
-    ? dayjs.unix(first_timestamp).utc().startOf('day')
-    : dayjs.utc().subtract(1, 'day').subtract(days, 'day').startOf('day')
+      ? dayjs.unix(first_timestamp).utc().startOf('day')
+      : dayjs.utc().subtract(1, 'day').subtract(days, 'day').startOf('day')
 
   // Determine the end time based on the provided end_date
   let end

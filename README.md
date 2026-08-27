@@ -40,7 +40,7 @@ zdpuAzr1QDRxAhHZAXNA84UvHbtbvCTPEU4e3LoLva8fHFxF8
 ```json
 {
   "account": "nano_11111746jddhkmjhfb8haumd97cpasftkap1j89gah1mc44exsq3uohbkw95",
-  "key":     "0000014448AD6F94E2F6A4CF46E6B39556465BA922C0898EE43C135084CEE6E1"
+  "key": "0000014448AD6F94E2F6A4CF46E6B39556465BA922C0898EE43C135084CEE6E1"
 }
 ```
 
@@ -50,13 +50,13 @@ An entry is valid if the contained state block is valid and the heights match.
 
 ```json
 {
-  "hash":     "zdpuAnctNUahQ2hRBeVSt7B3ymMKZ1qiHcGZUS8vABbwQ9LBs",
-  "id":       "zdpuAzr1QDRxAhHZAXNA84UvHbtbvCTPEU4e3LoLva8fHFxF8",
-  "block":    "zBwWX5GSt1YAYJYortZ4HSkWHD2JsDLjMmo5piYyZfgPqYiNMDEdPGcGLxjmt6nhmPApErDew6eVBdGECYtF6W73kZ1dk",
+  "hash": "zdpuAnctNUahQ2hRBeVSt7B3ymMKZ1qiHcGZUS8vABbwQ9LBs",
+  "id": "zdpuAzr1QDRxAhHZAXNA84UvHbtbvCTPEU4e3LoLva8fHFxF8",
+  "block": "zBwWX5GSt1YAYJYortZ4HSkWHD2JsDLjMmo5piYyZfgPqYiNMDEdPGcGLxjmt6nhmPApErDew6eVBdGECYtF6W73kZ1dk",
   "previous": "",
-  "refs":     [],
-  "v":        1,
-  "height":   0
+  "refs": [],
+  "v": 1,
+  "height": 0
 }
 ```
 

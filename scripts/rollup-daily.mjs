@@ -186,8 +186,8 @@ const main = async ({
   const end = end_date
     ? dayjs(end_date).utc().startOf('day')
     : full
-    ? dayjs.unix(first_timestamp)
-    : time.subtract(days, 'day')
+      ? dayjs.unix(first_timestamp)
+      : time.subtract(days, 'day')
 
   do {
     const insert = await get_daily_stats(time)

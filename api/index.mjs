@@ -78,7 +78,10 @@ api.use('/api/*', async (req, res, next) => {
     })
     req.auth = payload
   } catch (error) {
-    if (error.code === 'ERR_JWT_EXPIRED' || error.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
+    if (
+      error.code === 'ERR_JWT_EXPIRED' ||
+      error.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED'
+    ) {
       return next()
     }
     return next(error)

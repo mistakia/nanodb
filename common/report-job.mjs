@@ -13,7 +13,8 @@ const report_job = async ({ job_id, success, reason }) => {
   const api_url = process.env.BASE_API_URL
   if (!api_url) return
 
-  const source = process.env.JOB_SCHEDULE_ENTITY_URI || `service:nanodb-${job_id}`
+  const source =
+    process.env.JOB_SCHEDULE_ENTITY_URI || `service:nanodb-${job_id}`
   const outcome = success ? 'success' : 'failure'
 
   // Single canonical client: `base run report` owns transport selection (local
