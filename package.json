@@ -2,6 +2,7 @@
   "scripts": {
     "start": "NODE_ENV=development node server",
     "lint": "eslint . --ext js,mjs",
+    "verify": "yarn lint",
     "prettier": "prettier --write .",
     "test": "TZ=America/New_York NODE_ENV=test TEST=all mocha --exit",
     "deploy": "ssh database 'cd /home/user/projects/nanodb && git pull && source ~/.nvm/nvm.sh && nvm use 22 && yarn install && pm2 reload server.pm2.config.js --env production'",
