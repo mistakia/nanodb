@@ -20,9 +20,9 @@ JOB_PROJECT=nanodb
 # Rollup daily (midnight UTC)
 0 0 * * * TZ=UTC NODE_ENV=production JOB_SCHEDULE="0 0 * * *" JOB_SCHEDULE_TYPE=expr job-wrapper.sh nanodb-rollup-daily /home/user/.nvm/versions/node/current/bin/node --max-old-space-size=4096 /home/user/projects/nanodb/scripts/rollup-daily.mjs --days 1 >> /var/log/nanodb/rollup-daily.log 2>&1
 
-# Rollup daily balance distribution (3 AM UTC - staggered to avoid memory contention with hourly backups)
-# Memory reduced from 18GB to 14GB to leave headroom for PostgreSQL operations
-0 3 * * * TZ=UTC NODE_ENV=production JOB_SCHEDULE="0 3 * * *" JOB_SCHEDULE_TYPE=expr job-wrapper.sh nanodb-rollup-daily-balance-distribution /home/user/.nvm/versions/node/current/bin/node --max-old-space-size=14336 /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1 >> /var/log/nanodb/rollup-daily-balance-distribution.log 2>&1
+# Rollup daily balance distribution (3 AM UTC). Aggregates inside PostgreSQL
+# (about 3 minutes for the full ledger), so it needs no enlarged Node heap.
+0 3 * * * TZ=UTC NODE_ENV=production JOB_SCHEDULE="0 3 * * *" JOB_SCHEDULE_TYPE=expr job-wrapper.sh nanodb-rollup-daily-balance-distribution /home/user/.nvm/versions/node/current/bin/node /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1 >> /var/log/nanodb/rollup-daily-balance-distribution.log 2>&1
 
 # Import Price Quotes from CoinGecko (5 AM UTC)
 0 5 * * * TZ=UTC NODE_ENV=production JOB_SCHEDULE="0 5 * * *" JOB_SCHEDULE_TYPE=expr job-wrapper.sh nanodb-import-coingecko-prices /home/user/.nvm/versions/node/current/bin/node /home/user/projects/nanodb/scripts/import-coingecko-price-history.mjs >> /var/log/nanodb/import-coingecko-price-history.log 2>&1

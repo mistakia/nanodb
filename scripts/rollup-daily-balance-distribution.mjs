@@ -3,7 +3,6 @@ import dayjs from 'dayjs'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import utc from 'dayjs/plugin/utc.js'
-import BigNumber from 'bignumber.js'
 
 import db from '#db'
 import { isMain } from '#common'
@@ -16,322 +15,139 @@ debug.enable('rollup-daily-balance-distribution')
 
 const first_timestamp = '1550832660' // earliest local_timestamp in blocks table
 
-class BigMap {
-  constructor(iterable) {
-    if (iterable)
-      throw new Error("haven't implemented construction with iterable yet")
-    this._maps = [new Map()]
-    this._perMapSizeLimit = 10000000
-    this.size = 0
+// Lower bound (raw units) of each balance bracket, largest first. A non-zero
+// balance below the last bound falls in _000001_below; zero balances are
+// counted separately as _zero.
+const balance_brackets = [
+  { key: '_1000000', min: '1000000000000000000000000000000000000' }, // 1M
+  { key: '_100000', min: '100000000000000000000000000000000000' }, // 100K
+  { key: '_10000', min: '10000000000000000000000000000000000' }, // 10K
+  { key: '_1000', min: '1000000000000000000000000000000000' }, // 1K
+  { key: '_100', min: '100000000000000000000000000000000' }, // 100
+  { key: '_10', min: '10000000000000000000000000000000' }, // 10
+  { key: '_1', min: '1000000000000000000000000000000' }, // 1
+  { key: '_01', min: '100000000000000000000000000000' }, // 0.1
+  { key: '_001', min: '10000000000000000000000000000' }, // 0.01
+  { key: '_0001', min: '1000000000000000000000000000' }, // 0.001
+  { key: '_00001', min: '100000000000000000000000000' }, // 0.0001
+  { key: '_000001', min: '10000000000000000000000000' } // 0.00001
+]
+
+const bracket_conditions = [
+  ...balance_brackets.map(({ key, min }, index) => ({
+    key,
+    condition:
+      index === 0
+        ? `balance >= ${min}`
+        : `balance >= ${min} AND balance < ${balance_brackets[index - 1].min}`
+  })),
+  {
+    key: '_000001_below',
+    condition: `balance > 0 AND balance < ${balance_brackets[balance_brackets.length - 1].min}`
   }
+]
 
-  has(key) {
-    for (const map of this._maps) {
-      if (map.has(key)) return true
-    }
-    return false
-  }
+const distribution_query = `
+  SELECT
+    count(*) FILTER (WHERE balance = 0) AS _zero_account_count,
+    ${bracket_conditions
+      .map(
+        ({ key, condition }) => `
+    count(*) FILTER (WHERE ${condition}) AS ${key}_account_count,
+    COALESCE(sum(balance) FILTER (WHERE ${condition}), 0) AS ${key}_total_balance`
+      )
+      .join(',')}
+  FROM account_balances
+`
 
-  get(key) {
-    for (const map of this._maps) {
-      if (map.has(key)) return map.get(key)
-    }
-    return undefined
-  }
-
-  set(key, value) {
-    for (const map of this._maps) {
-      if (map.has(key)) {
-        map.set(key, value)
-        return this
-      }
-    }
-    let map = this._maps[this._maps.length - 1]
-    if (map.size > this._perMapSizeLimit) {
-      map = new Map()
-      this._maps.push(map)
-    }
-    map.set(key, value)
-    this.size++
-    return this
-  }
-
-  entries() {
-    let mapIndex = 0
-    let entries = this._maps[mapIndex].entries()
-    return {
-      next: () => {
-        const n = entries.next()
-        if (n.done) {
-          if (this._maps[++mapIndex]) {
-            entries = this._maps[mapIndex].entries()
-            return entries.next()
-          } else {
-            return { done: true }
-          }
-        } else {
-          return n
-        }
-      }
-    }
-  }
-
-  [Symbol.iterator]() {
-    return this.entries()
-  }
-
-  delete(key) {
-    throw new Error("haven't implemented this yet")
-  }
-
-  keys() {
-    throw new Error("haven't implemented this yet")
-  }
-
-  values() {
-    throw new Error("haven't implemented this yet")
-  }
-
-  forEach(fn) {
-    for (const map of this._maps) {
-      map.forEach(fn)
-    }
-  }
-
-  clear() {
-    throw new Error("haven't implemented this yet")
-  }
-}
-
-const get_daily_stats = ({ account_frontiers_cache, time }) => {
-  const balance_ranges = [
-    { key: '_1000000', value: 1000000000000000000000000000000000000n }, // 1M
-    { key: '_100000', value: 100000000000000000000000000000000000n }, // 100K
-    { key: '_10000', value: 10000000000000000000000000000000000n }, // 10K
-    { key: '_1000', value: 1000000000000000000000000000000000n }, // 1K
-    { key: '_100', value: 100000000000000000000000000000000n }, // 100
-    { key: '_10', value: 10000000000000000000000000000000n }, // 10
-    { key: '_1', value: 1000000000000000000000000000000n }, // 1
-    { key: '_01', value: 100000000000000000000000000000n }, // 0.1
-    { key: '_001', value: 10000000000000000000000000000n }, // 0.01
-    { key: '_0001', value: 1000000000000000000000000000n }, // 0.001
-    { key: '_00001', value: 100000000000000000000000000n }, // 0.0001
-    { key: '_000001', value: 10000000000000000000000000n }, // 0.00001
-    { key: '_000001_below', value: 0 }
-  ].map((range) => ({ ...range, value: new BigNumber(range.value) }))
-
-  const account_counts = {}
-  const total_balances = {}
-
-  balance_ranges.forEach(({ key }) => {
-    account_counts[`${key}_account_count`] = 0
-    total_balances[`${key}_total_balance`] = new BigNumber(0)
-  })
-
-  account_counts._zero_account_count = 0
-  total_balances._zero_total_balance = new BigNumber(0)
-
-  account_frontiers_cache.forEach(({ balance }) => {
-    let balance_range_key = balance.isZero() ? '_zero' : '_000001_below'
-
-    if (balance_range_key !== '_zero') {
-      for (const { key, value } of balance_ranges) {
-        if (balance.gte(value)) {
-          balance_range_key = key
-          break
-        }
-      }
-    }
-
-    account_counts[`${balance_range_key}_account_count`]++
-    total_balances[`${balance_range_key}_total_balance`] =
-      total_balances[`${balance_range_key}_total_balance`].plus(balance)
-  })
-
-  const result = {
-    timestamp: time.unix(),
-    timestamp_utc: time.format('YYYY-MM-DD HH:mm:ss'),
-    ...account_counts
-  }
-
-  Object.keys(total_balances).forEach((key) => {
-    result[key] = total_balances[key].toNumber()
-  })
-  delete result._zero_total_balance
-
-  return result
-}
-
-// Rollup daily balance distribution going forward in time
+// The balance of every account as of a moment is its highest-height block at
+// or before it. Both the whole ledger (tens of millions of accounts) and the
+// per-bracket aggregation stay inside PostgreSQL: the previous implementation
+// pulled every account into a Node Map and exhausted its 14 GB heap, and the
+// job last produced data on 2026-01-02.
 const rollup_daily_balance_distribution = async ({
-  start_date = null, // the start date for processing. defaults to one day prior to the last completed UTC day.
-  days = 1, // the number of days to process.
-  full = false, // whether to process the full range.
-  end_date = null // the end date for processing. defaults to the last completed UTC day.
+  start_date = null, // first day to process. defaults to `days` before the last completed UTC day.
+  days = 1, // number of days to process when start_date is not given.
+  full = false, // process from the first block onward.
+  end_date = null // exclusive end day. defaults to today, so the last completed UTC day is included.
 }) => {
-  // Determine the start time based on the provided start_date or days
   let time = start_date
-    ? dayjs(start_date).utc().startOf('day')
+    ? dayjs.utc(start_date).startOf('day')
     : full
       ? dayjs.unix(first_timestamp).utc().startOf('day')
-      : dayjs.utc().subtract(1, 'day').subtract(days, 'day').startOf('day')
-
-  // Determine the end time based on the provided end_date
-  let end
-  if (end_date) {
-    end = dayjs(end_date).utc().startOf('day')
-  } else {
-    end = dayjs().utc().subtract(1, 'day').startOf('day')
-  }
+      : dayjs.utc().startOf('day').subtract(days, 'day')
+  const end = end_date
+    ? dayjs.utc(end_date).startOf('day')
+    : dayjs.utc().startOf('day')
 
   log(
-    `start_date: ${time.format('MM/DD/YYYY')}, end_date: ${end.format(
-      'MM/DD/YYYY'
-    )}, full: ${full}, days: ${days}`
+    `processing ${time.format('YYYY-MM-DD')} up to (excluding) ${end.format('YYYY-MM-DD')}`
   )
 
-  // Calculate frontiers at the start
-  // Uses window function rank() OVER (PARTITION BY account ORDER BY height DESC)
-  // on the full blocks table, requiring elevated work_mem for the sort operation.
-  const account_frontiers = await db.transaction(async (trx) => {
-    await trx.raw("SET LOCAL work_mem = '256MB'")
-    return trx
-      .with(
-        'ranked_blocks',
-        trx.raw(`
-      SELECT
-        account,
-        balance,
-        rank() OVER (PARTITION BY account ORDER BY height DESC) AS rank
-      FROM blocks
-      WHERE local_timestamp <= ${time.unix()}
-    `)
-      )
-      .with(
-        'latest_balances',
-        trx.raw(`
-      SELECT account, balance
-      FROM ranked_blocks
-      WHERE rank = 1
-    `)
-      )
-      .with(
-        'account_tags',
-        trx.raw(`
-      SELECT
-        accounts_tags.account,
-        array_agg(tag) as tags
-      FROM accounts_tags
-      JOIN latest_balances ON accounts_tags.account = latest_balances.account
-      GROUP BY accounts_tags.account
-    `)
-      )
-      .select(
-        'latest_balances.account',
-        'latest_balances.balance',
-        'account_tags.tags'
-      )
-      .from('latest_balances')
-      .leftJoin(
-        'account_tags',
-        'account_tags.account',
-        'latest_balances.account'
-      )
-  })
+  // A session-scoped temp table needs one connection for the whole run.
+  // Statements autocommit, so no long transaction holds back vacuum.
+  const connection = await db.client.acquireConnection()
+  const run = (sql, bindings = []) =>
+    db.raw(sql, bindings).connection(connection)
 
-  // Cache the account frontiers
-  const account_frontiers_cache = new BigMap()
-  account_frontiers.forEach((frontier) => {
-    const { account, balance } = frontier
-    account_frontiers_cache.set(account, {
-      account,
-      balance: new BigNumber(balance)
-    })
-  })
-
-  log(`account_frontiers: ${account_frontiers.length}`)
-
-  do {
-    // Go through blocks produced that day and update frontiers
-    const daily_account_state_changes = await db.transaction(async (trx) => {
-      await trx.raw("SET LOCAL work_mem = '256MB'")
-      return trx
-        .with(
-          'daily_blocks',
-          trx.raw(`
-        SELECT
-          account,
-          balance,
-          rank() OVER (PARTITION BY account ORDER BY height DESC) AS rank
+  try {
+    await run("SET work_mem = '256MB'")
+    await run('DROP TABLE IF EXISTS account_balances')
+    await run(
+      `CREATE TEMP TABLE account_balances AS
+        SELECT DISTINCT ON (account) account, balance, height
         FROM blocks
-        WHERE local_timestamp >= ${time.unix()}
-          AND local_timestamp < ${time.add(1, 'day').unix()}
-      `)
-        )
-        .with(
-          'latest_daily_balances',
-          trx.raw(`
-        SELECT account, balance
-        FROM daily_blocks
-        WHERE rank = 1
-      `)
-        )
-        .with(
-          'daily_account_tags',
-          trx.raw(`
-        SELECT
-          accounts_tags.account,
-          array_agg(tag) as tags
-        FROM accounts_tags
-        JOIN latest_daily_balances ON accounts_tags.account = latest_daily_balances.account
-        GROUP BY accounts_tags.account
-      `)
-        )
-        .select(
-          'latest_daily_balances.account',
-          'latest_daily_balances.balance',
-          'daily_account_tags.tags'
-        )
-        .from('latest_daily_balances')
-        .leftJoin(
-          'daily_account_tags',
-          'daily_account_tags.account',
-          'latest_daily_balances.account'
-        )
-    })
+        WHERE local_timestamp < ?
+        ORDER BY account, height DESC`,
+      [time.unix()]
+    )
+    await run('ALTER TABLE account_balances ADD PRIMARY KEY (account)')
+    const {
+      rows: [{ count: account_count }]
+    } = await run('SELECT count(*) FROM account_balances')
+    log(`account balances as of ${time.format('YYYY-MM-DD')}: ${account_count}`)
 
-    log(`daily_account_state_changes: ${daily_account_state_changes.length}`)
+    while (time.isBefore(end)) {
+      const next = time.add(1, 'day')
 
-    // Update account frontiers
-    daily_account_state_changes.forEach((change) => {
-      if (change && change.account) {
-        const { account, balance } = change
-        account_frontiers_cache.set(account, {
-          account,
-          balance: new BigNumber(balance)
-        })
-      } else {
-        log('Invalid account state change:', change)
-        throw new Error('Invalid account state change')
+      // Apply the day's blocks. The height guard keeps a block that arrives
+      // out of order from rolling an account back to an older balance.
+      const { rowCount: changed } = await run(
+        `INSERT INTO account_balances (account, balance, height)
+          SELECT DISTINCT ON (account) account, balance, height
+          FROM blocks
+          WHERE local_timestamp >= ? AND local_timestamp < ?
+          ORDER BY account, height DESC
+        ON CONFLICT (account) DO UPDATE
+          SET balance = EXCLUDED.balance, height = EXCLUDED.height
+          WHERE EXCLUDED.height > account_balances.height`,
+        [time.unix(), next.unix()]
+      )
+
+      const {
+        rows: [distribution]
+      } = await run(distribution_query)
+
+      const row = {
+        timestamp: time.unix(),
+        timestamp_utc: time.format('YYYY-MM-DD HH:mm:ss')
       }
-    })
+      for (const [column, value] of Object.entries(distribution)) {
+        row[column] = column.endsWith('_account_count') ? Number(value) : value
+      }
+      delete row._zero_total_balance
 
-    log(`calculating daily stats for ${account_frontiers_cache.size} accounts`)
+      await db('rollup_daily').insert(row).onConflict('timestamp').merge()
 
-    // Generate daily stats
-    const daily_stats = get_daily_stats({
-      account_frontiers_cache,
-      time
-    })
-
-    // Save daily stats
-    await db('rollup_daily').insert(daily_stats).onConflict('timestamp').merge()
-
-    log(`processed ${time.format('MM/DD/YYYY')}`)
-
-    // Move to the next day
-    time = time.add(1, 'day')
-  } while (time.isBefore(end))
+      log(
+        `processed ${time.format('YYYY-MM-DD')} (${changed} accounts changed)`
+      )
+      time = next
+    }
+  } finally {
+    await run('DROP TABLE IF EXISTS account_balances').catch(() => {})
+    await db.client.releaseConnection(connection)
+  }
 }
 
 const main = async () => {
