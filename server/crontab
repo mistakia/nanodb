@@ -3,7 +3,10 @@
 # Deploy: yarn deploy:crontab  (-> database:~/crontab/nanodb.cron)
 #         This deploy pipes straight to ssh rather than routing through
 #         deploy_crontab_scope, so it has NO scope manifest and is never
-#         orphan-reaped. As of 2026-08-01 no host has a deployed copy at all.
+#         orphan-reaped.
+# Every job runs under job-wrapper.sh, which reports each run to the runs
+# ledger as cron:database:<slug>. That is what surfaces a failed or silently
+# absent rollup; the jobs were undeployed 2026-03-10 to 2026-09-29 unnoticed.
 #
 ################################### Database Server NanoDB Crontab ###################################
 # Location: ~/crontab/nanodb.cron on database.localdomain
@@ -12,14 +15,14 @@
 JOB_PROJECT=nanodb
 
 # Rollup hourly stats (runs at :05 past every hour to ensure previous hour is complete)
-5 * * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/current/bin/node --max-old-space-size=4096 /home/user/projects/nanodb/scripts/rollup-hourly.mjs &>> /var/log/nanodb/rollup-hourly.log
+5 * * * * TZ=UTC NODE_ENV=production JOB_SCHEDULE="5 * * * *" JOB_SCHEDULE_TYPE=expr job-wrapper.sh nanodb-rollup-hourly /home/user/.nvm/versions/node/current/bin/node --max-old-space-size=4096 /home/user/projects/nanodb/scripts/rollup-hourly.mjs >> /var/log/nanodb/rollup-hourly.log 2>&1
 
 # Rollup daily (midnight UTC)
-0 0 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/current/bin/node --max-old-space-size=4096 /home/user/projects/nanodb/scripts/rollup-daily.mjs --days 1 &>> /var/log/nanodb/rollup-daily.log
+0 0 * * * TZ=UTC NODE_ENV=production JOB_SCHEDULE="0 0 * * *" JOB_SCHEDULE_TYPE=expr job-wrapper.sh nanodb-rollup-daily /home/user/.nvm/versions/node/current/bin/node --max-old-space-size=4096 /home/user/projects/nanodb/scripts/rollup-daily.mjs --days 1 >> /var/log/nanodb/rollup-daily.log 2>&1
 
 # Rollup daily balance distribution (3 AM UTC - staggered to avoid memory contention with hourly backups)
 # Memory reduced from 18GB to 14GB to leave headroom for PostgreSQL operations
-0 3 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/current/bin/node --max-old-space-size=14336 /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1 &>> /var/log/nanodb/rollup-daily-balance-distribution.log
+0 3 * * * TZ=UTC NODE_ENV=production JOB_SCHEDULE="0 3 * * *" JOB_SCHEDULE_TYPE=expr job-wrapper.sh nanodb-rollup-daily-balance-distribution /home/user/.nvm/versions/node/current/bin/node --max-old-space-size=14336 /home/user/projects/nanodb/scripts/rollup-daily-balance-distribution.mjs --days 1 >> /var/log/nanodb/rollup-daily-balance-distribution.log 2>&1
 
 # Import Price Quotes from CoinGecko (5 AM UTC)
-0 5 * * * TZ=UTC NODE_ENV=production /home/user/.nvm/versions/node/current/bin/node /home/user/projects/nanodb/scripts/import-coingecko-price-history.mjs &>> /var/log/nanodb/import-coingecko-price-history.log
+0 5 * * * TZ=UTC NODE_ENV=production JOB_SCHEDULE="0 5 * * *" JOB_SCHEDULE_TYPE=expr job-wrapper.sh nanodb-import-coingecko-prices /home/user/.nvm/versions/node/current/bin/node /home/user/projects/nanodb/scripts/import-coingecko-price-history.mjs >> /var/log/nanodb/import-coingecko-price-history.log 2>&1

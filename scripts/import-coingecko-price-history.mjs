@@ -9,7 +9,6 @@ import { hideBin } from 'yargs/helpers'
 import db from '#db'
 import { isMain } from '#common'
 /* eslint-enable no-unused-vars */
-import report_job from '#common/report-job.mjs'
 
 const argv = yargs(hideBin(process.argv)).argv
 const log = debug('import-coingecko-price-history')
@@ -37,7 +36,6 @@ const import_coingecko_price_history = async ({ file } = {}) => {
 }
 
 const main = async () => {
-  const start_time = Date.now()
   let error
   try {
     await import_coingecko_price_history({ file: argv.file })
@@ -45,15 +43,6 @@ const main = async () => {
     error = err
     log(error)
   }
-
-  await report_job({
-    job_id: 'nanodb-import-coingecko-prices',
-    success: !error,
-    reason: error ? error.message || String(error) : null,
-    duration_ms: Date.now() - start_time,
-    schedule: '0 5 * * *',
-    schedule_type: 'expr'
-  })
 
   process.exit(error ? 1 : 0)
 }

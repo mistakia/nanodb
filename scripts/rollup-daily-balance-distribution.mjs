@@ -7,7 +7,6 @@ import BigNumber from 'bignumber.js'
 
 import db from '#db'
 import { isMain } from '#common'
-import report_job from '#common/report-job.mjs'
 
 dayjs.extend(utc)
 
@@ -336,7 +335,6 @@ const rollup_daily_balance_distribution = async ({
 }
 
 const main = async () => {
-  const start_time = Date.now()
   let error
   try {
     await rollup_daily_balance_distribution({
@@ -349,15 +347,6 @@ const main = async () => {
     error = err
     log(error)
   }
-
-  await report_job({
-    job_id: 'nanodb-rollup-daily-balance-dist',
-    success: !error,
-    reason: error ? error.message || String(error) : null,
-    duration_ms: Date.now() - start_time,
-    schedule: '0 3 * * *',
-    schedule_type: 'expr'
-  })
 
   process.exit(error ? 1 : 0)
 }
