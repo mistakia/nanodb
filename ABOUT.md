@@ -27,13 +27,19 @@ observations:
     to and never reaped), and their old options still built the shared message. Closing them with
     sudo ss -K on base-worker-peer fixed it; any future subscriber that omits include_election_info
     reintroduces the fault.
+  - >-
+    [finding] 2026-09-29 Intermittent 20s proxy timeouts on /api/nanodb/* are pfSense dropping SYNs,
+    not nanodb: the WAN rule 'NAT nanodb API' sets max-src-states 10 for the VPS source, and the
+    nano-community proxy opens a fresh connection per request, so bursts exceed the cap (pf
+    src-limit counter 11687). Routes answer in under 30ms on the host; port 7076 from the same VPS
+    is clean.
 public_read: false
 relations:
   - follows [[user:guideline/directory-markdown-standards.md]]
 tags:
   - user:tag/nanodb-project.md
   - user:tag/nano-cryptocurrency.md
-updated_at: '2026-09-29T16:56:29.472Z'
+updated_at: '2026-09-29T18:24:23.411Z'
 user_public_key: 10ba842b1307fd60475b887df61ccc7e697970a2d222e7cbf011e51f5de3349b
 ---
 
