@@ -21,13 +21,19 @@ observations:
     once from the first subscribed session's options, and base-api's confirmation-subscriber omitted
     include_election_info, so nanodb lost it whenever that session sat ahead in the node's list.
     Fixed in base 554aa4a05; election data before the fix is unrecoverable.
+  - >-
+    [gotcha] 2026-09-29 Restarting base-api did not restore election_info: the node kept 13
+    half-open websocket sessions from old base-api connections (account-filtered, so never written
+    to and never reaped), and their old options still built the shared message. Closing them with
+    sudo ss -K on base-worker-peer fixed it; any future subscriber that omits include_election_info
+    reintroduces the fault.
 public_read: false
 relations:
   - follows [[user:guideline/directory-markdown-standards.md]]
 tags:
   - user:tag/nanodb-project.md
   - user:tag/nano-cryptocurrency.md
-updated_at: '2026-09-29T15:47:40.384Z'
+updated_at: '2026-09-29T16:56:29.472Z'
 user_public_key: 10ba842b1307fd60475b887df61ccc7e697970a2d222e7cbf011e51f5de3349b
 ---
 
