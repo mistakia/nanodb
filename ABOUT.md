@@ -15,13 +15,19 @@ observations:
     the next restart while PM2 still showed nanodb-api online with no listener on 8084. Deploy only
     via yarn deploy, which runs yarn install; the public-route probe is
     scheduled-command/monitoring/check-nanodb-api.md.
+  - >-
+    [incident] 2026-09-29 Blocks carried no election_info from 2026-07-30 (and 2026-06-16 to
+    2026-07-12), zeroing /api/blocks/confirmed/summary: Nano V27.1 builds each confirmation message
+    once from the first subscribed session's options, and base-api's confirmation-subscriber omitted
+    include_election_info, so nanodb lost it whenever that session sat ahead in the node's list.
+    Fixed in base 554aa4a05; election data before the fix is unrecoverable.
 public_read: false
 relations:
   - follows [[user:guideline/directory-markdown-standards.md]]
 tags:
   - user:tag/nanodb-project.md
   - user:tag/nano-cryptocurrency.md
-updated_at: '2026-09-29T15:19:58.872Z'
+updated_at: '2026-09-29T15:47:40.384Z'
 user_public_key: 10ba842b1307fd60475b887df61ccc7e697970a2d222e7cbf011e51f5de3349b
 ---
 
