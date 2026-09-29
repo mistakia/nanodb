@@ -33,13 +33,16 @@ observations:
     nano-community proxy opens a fresh connection per request, so bursts exceed the cap (pf
     src-limit counter 11687). Routes answer in under 30ms on the host; port 7076 from the same VPS
     is clean.
+  - >-
+    [fixed] 2026-09-29 Raised max-src-states on the pfSense WAN rule 'NAT nanodb API' (tracker
+    1625757338) from 10 to 200; 30 of 30 VPS connects to 8080 then completed in about 0.1s.
 public_read: false
 relations:
   - follows [[user:guideline/directory-markdown-standards.md]]
 tags:
   - user:tag/nanodb-project.md
   - user:tag/nano-cryptocurrency.md
-updated_at: '2026-09-29T18:24:23.411Z'
+updated_at: '2026-09-29T18:33:55.597Z'
 user_public_key: 10ba842b1307fd60475b887df61ccc7e697970a2d222e7cbf011e51f5de3349b
 ---
 
