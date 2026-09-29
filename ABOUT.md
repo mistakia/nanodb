@@ -8,13 +8,20 @@ description: >-
 base_uri: user:repository/active/nanodb/ABOUT.md
 created_at: '2026-05-13T18:07:35.063Z'
 entity_id: 80dd8071-6afb-4158-beff-253ba17dfcba
+observations:
+  - >-
+    [incident] 2026-09-29 The nanodb API was dark from 2026-06-25 until fixed: a 2026-06-09 host git
+    pull brought the jose dependency without yarn install, so server.mjs failed at ESM link time on
+    the next restart while PM2 still showed nanodb-api online with no listener on 8084. Deploy only
+    via yarn deploy, which runs yarn install; the public-route probe is
+    scheduled-command/monitoring/check-nanodb-api.md.
 public_read: false
 relations:
   - follows [[user:guideline/directory-markdown-standards.md]]
 tags:
   - user:tag/nanodb-project.md
   - user:tag/nano-cryptocurrency.md
-updated_at: '2026-05-13T18:07:35.063Z'
+updated_at: '2026-09-29T15:19:58.872Z'
 user_public_key: 10ba842b1307fd60475b887df61ccc7e697970a2d222e7cbf011e51f5de3349b
 ---
 
