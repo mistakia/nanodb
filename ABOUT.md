@@ -36,14 +36,19 @@ observations:
   - >-
     [fixed] 2026-09-29 Raised max-src-states on the pfSense WAN rule 'NAT nanodb API' (tracker
     1625757338) from 10 to 200; 30 of 30 VPS connects to 8080 then completed in about 0.1s.
+  - >-
+    [declassification] Released to public (required = ∅) via base entity visibility set: Operator
+    approved 2026-10-06: clean context-file tranche (classifier clean + recheck confirm), public
+    tier.
 owner_identity_uri: user:identity/trashman.md
-public_read: false
+public_read: true
 relations:
   - follows [[user:guideline/directory-markdown-standards.md]]
 tags:
   - user:tag/nanodb-project.md
   - user:tag/nano-cryptocurrency.md
 updated_at: '2026-09-29T18:33:55.597Z'
+visibility_analyzed_at: '2026-10-07T01:22:59.169Z'
 ---
 
 ## Purpose
