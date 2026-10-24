@@ -1,0 +1,9 @@
+# sops/age recipient policy for nanodb production config.
+#
+# config.production.json is host-only and gitignored. It holds the production
+# config, encrypted to the database host's age recipient. The private identity
+# lives on that host at ~/.config/sops/age/keys.txt; this file records only the
+# public recipient. Edit with `sops config.production.json` on the host.
+creation_rules:
+  - path_regex: config\.production\.json$
+    age: age1jxdryhtc005svt4ea7nm326hvmelkw8zjrz2enagukwp7gxng9qspsjejv

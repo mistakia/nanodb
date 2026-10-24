@@ -13,3 +13,4 @@ yarn-error.log
 *.log
 *.parquet
 config.production.js
+config.production.json

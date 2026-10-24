@@ -57,7 +57,7 @@ data/                  # Snapshots
 - ESM throughout; `#libs-server/*` import aliases (recent refactor).
 - JWT auth via `jose` (migrated from older `jsonwebtoken`).
 - Knex migrations; MySQL and PostgreSQL both supported.
-- Secrets are plaintext and out-of-repo — nanodb has no `.sops.yaml`. The Node app loads `config.${env}.js` (production `config.production.js` is gitignored; `config.sample.js` is the structural template); the Python exporters read an uncommitted plaintext `config.json` holding DB credentials. Sibling nano repos (e.g. nano-community) have cut over to sops/age; if nanodb takes on committed secrets, adopt that scheme per [[user:guideline/homelab/sops-age-authoring.md]].
+- Production secrets are sops/age-encrypted at rest in the host-only, gitignored `config.production.json`, encrypted to the database host's recipient in `.sops.yaml`. `config.js` decrypts it with the system `sops` and fails closed; test and development load plaintext `config.${env}.js`, which holds no secrets (`config.sample.js` is the structural template). Edit the production config on the host with `sops config.production.json`, per [[user:guideline/homelab/sops-age-authoring.md]].
 
 ## Deployment
 
