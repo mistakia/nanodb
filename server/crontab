@@ -1,9 +1,6 @@
 # Managed by nanodb repo -- do not edit deployed copy
 # Source: nanodb/server/crontab
-# Deploy: yarn deploy:crontab  (-> database:~/crontab/nanodb.cron)
-#         This deploy pipes straight to ssh rather than routing through
-#         deploy_crontab_scope, so it has NO scope manifest and is never
-#         orphan-reaped.
+# Deploy: yarn deploy:crontab  (deploy_crontab_scope nanodb -> database:~/crontab/nanodb.cron)
 # Every job runs under job-wrapper.sh, which reports each run to the runs
 # ledger as cron:database:<slug>. That is what surfaces a failed or silently
 # absent rollup; the jobs were undeployed 2026-03-10 to 2026-09-29 unnoticed.
